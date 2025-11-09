@@ -1,0 +1,23 @@
+{
+  "name": "6502golf",
+  "version": "1.0.0",
+  "description": "6502 golfing website",
+  "main": "index.ts",
+  "scripts": {
+    "build": "./node_modules/.bin/esbuild page.tsx --bundle --outfile=out.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "CatsAreFluffy",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^24.10.0",
+    "@types/react-dom": "^19.2.2",
+    "esbuild": "0.26.0"
+  },
+  "dependencies": {
+    "@uiw/react-codemirror": "^4.25.3",
+    "codemirror": "^6.0.2",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  }
+}
