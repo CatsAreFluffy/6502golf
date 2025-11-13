@@ -99,6 +99,8 @@ export default class Machine {
             [0xa2, ["ldx", "immediate"]],
             [0xa9, ["lda", "immediate"]],
             [0xad, ["lda", "absolute"]],
+            [0xca, ["dex", "implicit"]],
+            [0xd0, ["bne", "relative"]],
         ]);
         let opcode = this.read_instruction();
         let decode = opcodes.get(opcode);
@@ -129,21 +131,47 @@ export default class Machine {
                 this.pc++;
                 break;
             case "implicit":
+                this.read(this.pc);
+                break;
+            case "relative":
+                let offset = this.read_instruction();
+                if(offset >= 128) {
+                    offset -= 256;
+                }
+                effective_address = (this.pc + offset) & 0xffff;
                 break;
             default:
                 throw new Error(`Unknown addressing mode ${mode}`);
         }
-        if(mode == "immediate" || mode == "implicit") {
+        if(mode == "immediate" || mode == "implicit" || mode == "relative") {
             this.last_data = new MemoryRange(0, 0);
         } else {
             this.last_data = new MemoryRange(effective_address, (effective_address + 1) & 0xffff);
         }
+        let is_jump = false;
         switch(instruction) {
             case "asl.a": {
                 let shifted = this.a << 1;
                 this.a = shifted & 0xff;
                 this.set_nz(this.a);
                 this.c = (shifted >> 8) > 0;
+                break;
+            }
+            case "bne": {
+                is_jump = true;
+                this.last_instruction = new MemoryRange(instruction_start, this.pc);
+                if(!this.z) {
+                    this.read_instruction();
+                    if((effective_address >> 8) != (this.pc >> 8)) {
+                        this.read((this.pc & 0xff00) | (effective_address & 0xff));
+                    }
+                    this.pc = effective_address;
+                }
+                break;
+            }
+            case "dex": {
+                this.x = (this.x - 1) & 0xff;
+                this.set_nz(this.x);
                 break;
             }
             case "lda":
@@ -170,7 +198,9 @@ export default class Machine {
             default:
                 throw new Error(`Unknown instruction ${instruction}`);
         }
-        let instruction_end = this.pc;
-        this.last_instruction = new MemoryRange(instruction_start, instruction_end);
+        if(!is_jump) {
+            let instruction_end = this.pc;
+            this.last_instruction = new MemoryRange(instruction_start, instruction_end);
+        }
     }
 }

@@ -7,13 +7,11 @@ import Machine from "./machine";
 import MachineView from "./machine_view";
 
 const default_code = `
- org $fffc
- dc.w $8000
- org $8000
- lda $fffc
- sta $fffe
- lda $fffd
- sta $ffff
+ lda #$42
+ ldx #$20
+loop dex
+ sta $8000,x
+ bne loop
 `.replace(/^\n|\n$/g,"");
 
 function assemble_source(src: string): Machine | undefined {
