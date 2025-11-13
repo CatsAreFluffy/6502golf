@@ -10,20 +10,29 @@ const default_code = `
  lda #$a9
  sta label`.replace("\n","");
 
-function App() {
-    const [machine, setMachine] = useState(new Machine(new Array(65536).fill(0)));
-
-    const handleChange = React.useCallback((val: string, viewUpdate: ViewUpdate) => {
-        console.log("val:", val);
-        let tokens = lex(val)
+function assemble_source(src: string): Machine | undefined {
+        console.log("src:", src);
+        let tokens = lex(src)
         console.log("lex:", tokens);
         try {
             let parse_tree = parse(tokens);
             console.log("parse:", parse_tree);
             let code = assemble(parse_tree);
-            setMachine(new Machine(code));
+            return new Machine(code);
         } catch(e) {
             console.error(e);
+        }
+}
+
+function App() {
+    const [machine, setMachine] = useState(
+        () => assemble_source(default_code) ?? new Machine(new Array(65536).fill(0))
+    );
+
+    const handleChange = React.useCallback((val: string, viewUpdate: ViewUpdate) => {
+        let machine = assemble_source(val);
+        if(machine) {
+            setMachine(machine);
         }
     }, []);
 
