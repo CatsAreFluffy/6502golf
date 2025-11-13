@@ -1,3 +1,24 @@
+export class MemoryRange {
+    start: number;
+    end: number;
+
+    constructor(start: number, end: number) {
+        this.start = start;
+        this.end = end;
+    }
+
+    includes(value: number): boolean {
+        return +(value >= this.start) + +(value < this.end) + +(this.start > this.end) >= 2;
+    }
+
+    overlaps(other: MemoryRange): boolean {
+        if(this.start == this.end || other.start == other.end) {
+            return false;
+        }
+        return this.includes(other.start) || other.includes(this.start);
+    }
+}
+
 export default class Machine {
     memory: number[];
 
@@ -15,6 +36,9 @@ export default class Machine {
     i: boolean = false;
 
     cycles: number = 0;
+
+    last_instruction: MemoryRange = new MemoryRange(0, 0);
+    last_data: MemoryRange = new MemoryRange(0, 0);
 
     constructor(memory: number[]) {
         this.memory = memory;
@@ -65,6 +89,7 @@ export default class Machine {
     }
 
     step() {
+        let instruction_start = this.pc;
         const opcodes = new Map([
             [0x8d, ["sta", "absolute"]],
             [0xa9, ["lda", "immediate"]],
@@ -91,6 +116,11 @@ export default class Machine {
             default:
                 throw new Error(`Unknown addressing mode ${mode}`);
         }
+        if(mode == "immediate") {
+            this.last_data = new MemoryRange(0, 0);
+        } else {
+            this.last_data = new MemoryRange(effective_address, (effective_address + 1) & 0xffff);
+        }
         switch(instruction) {
             case "lda":
                 this.a = this.read(effective_address);
@@ -102,5 +132,7 @@ export default class Machine {
             default:
                 throw new Error(`Unknown instruction ${instruction}`);
         }
+        let instruction_end = this.pc;
+        this.last_instruction = new MemoryRange(instruction_start, instruction_end);
     }
 }

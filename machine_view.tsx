@@ -1,7 +1,8 @@
 import React from "react";
 
-import Machine from "./machine";
+import Machine, { MemoryRange } from "./machine";
 import MemoryView from "./memory_view";
+import { RangeContext } from "./range_context";
 
 function hex(value: number, length: number = 2): String {
     return value.toString(16).padStart(length, "0");
@@ -23,7 +24,9 @@ export default function MachineView({ machine: m }: {machine: Machine}) {
             Cycles: {m.cycles} <br />
             PC: {hex(m.pc, 4)} A: {hex(m.a)} X: {hex(m.x)} Y: {hex(m.y)} S: {hex(m.s)} P: {names2}
             <br />
-            <MemoryView memory={m.memory} />
+            <RangeContext value={[m.last_instruction, m.last_data]}>
+                <MemoryView memory={m.memory} />
+            </RangeContext>
         </div>
     )
 }
