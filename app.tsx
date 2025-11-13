@@ -7,40 +7,9 @@ import Machine from "./machine";
 import MachineView from "./machine_view";
 
 const default_code = `
- org 0
-tmp0 byte 0
- org $0400
-mul10l
- org $0500
-mul10h
- org $0200
-fill
- sta mul10l,x
- sta tmp0
- tya
- sta mul10h,x
- lda tmp0
- adc #10
- bcc nocarry
- iny
-nocarry
- inx
- bne fill
-fillslow
- sta mul10l,x
- sta tmp0
- tya
- adc #0
- sta mul10h,x
- tay
- lda tmp0
- adc #10
- inx
- bne fillslow
+ lda #1
+stall bne stall
 `.replace(/^\n|\n$/g,"");
-
-// old was 35
-// this is 28/29
 
 function assemble_source(src: string): Machine | undefined {
         console.log("src:", src);
@@ -74,7 +43,7 @@ function App() {
         setMachine(new_machine);
     }
 
-    const handleStepIter = () => {
+    const handleRunToJump = () => {
         let new_machine = machine.clone();
         let last_pc = -1;
         while(last_pc < new_machine.pc) {
@@ -84,11 +53,29 @@ function App() {
         setMachine(new_machine);
     }
 
+    const handleRunToBrk = () => {
+        let new_machine = machine.clone();
+        let now = Date.now();
+        let i = 0;
+        for(; i < 1000000; i++) {
+            if(!new_machine.memory[new_machine.pc]) {
+                break;
+            }
+            new_machine.step();
+        }
+        let millis = Date.now() - now;
+        if(i > 0) {
+            console.log("One step takes", millis*1e6/i, "ns");
+        }
+        setMachine(new_machine);
+    }
+
     return (
         <>
             <ReactCodeMirror value={default_code} onChange={handleChange}/>
             <button onClick={handleStep}>Step</button>
-            <button onClick={handleStepIter}>Step until backwards jump</button>
+            <button onClick={handleRunToJump}>Run until backwards jump</button>
+            <button onClick={handleRunToBrk}>Run until BRK</button>
             <MachineView machine={machine} />
         </>
     );
