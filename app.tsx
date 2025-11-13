@@ -7,8 +7,29 @@ import Machine from "./machine";
 import MachineView from "./machine_view";
 
 const default_code = `
+ org 0
+tmp0 byte 0
+ org $0400
+mul10l
+ org $0500
+mul10h
+ org $1000
+array
+ org $0200
+fill
+ sta mul10l,x
+ sta tmp0
+ tya
+ sta mul10h,x
  lda #1
-stall bne stall
+ sta array,x
+ lda tmp0
+ adc #10
+ bcc nocarry
+ iny
+nocarry
+ inx
+ bne fill
 `.replace(/^\n|\n$/g,"");
 
 function assemble_source(src: string): Machine | undefined {
@@ -65,7 +86,7 @@ function App() {
         }
         let millis = Date.now() - now;
         if(i > 0) {
-            console.log("One step takes", millis*1e6/i, "ns");
+            console.log("One step takes", (millis*1e6/i).toPrecision(2), "ns");
         }
         setMachine(new_machine);
     }
