@@ -122,7 +122,11 @@ function parse_instruction(stream: TokenStream): Instruction {
     if(opcode.kind != "identifier") {
         throw new ParseError("Instructions must not be symbols", opcode);
     }
-    return [opcode.token, parse_operand(stream)];
+    let operand = parse_operand(stream);
+    if(!stream.eof() && stream.peek().kind != "newline") {
+        throw new ParseError("Unexpected token after instruction", stream.peek());
+    }
+    return [opcode.token, operand];
 }
 
 type Label = string;
