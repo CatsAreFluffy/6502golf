@@ -1,7 +1,15 @@
-import { Operand, Line, Program } from "./parser";
+import { Operand, Line, Program, Expr } from "./parser";
+
+type Relocation = {
+    address: number,
+    instruction_address: number,
+    length: number,
+    expr: Expr,
+}
 
 export default function assemble(program: Program): number[] {
     let ret = new Array(65536).fill(0);
+    let relocations: Relocation[] = [];
     // reset=0x200
     ret[0xfffd] = 2;
     let org = 0x200;
@@ -27,16 +35,30 @@ export default function assemble(program: Program): number[] {
         if(!opcode) {
             throw new Error(`Illegal addressing mode ${operand.mode} for ${instruction}`);
         }
-        ret[org++] = opcode;
+        ret[org] = opcode;
+        org = (org + 1) & 0xffff;
         let operand_length = operand_lengths.get(operand.mode);
         if(!operand_length) {
             throw new Error(`Unknown length for addressing mode ${operand.mode}`);
         }
-        if(operand_length > 0) {
-            ret[org++] = operand.body & 255;
+        relocations.push({
+            address: org,
+            instruction_address: (org - 1) & 0xffff,
+            length: operand_length,
+            expr: operand.body,
+        })
+        org = (org + operand_length) & 0xffff;
+    }
+    for(let {address, instruction_address, length, expr} of relocations) {
+        let value = expr;
+        if(typeof expr == "string") {
+            value = 0x205;
+        } else {
+            value = expr;
         }
-        if(operand_length > 1) {
-            ret[org++] = (operand.body >> 8) & 255;
+        for(let i = 0; i < length; i++) {
+            ret[(address + i) & 0xffff] = value & 255;
+            value >>= 8;
         }
     }
     return ret;

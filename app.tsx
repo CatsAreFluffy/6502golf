@@ -7,8 +7,8 @@ import Machine from "./machine";
 import MachineView from "./machine_view";
 
 const default_code = `
- lda #$03
- sta 20`.replace("\n","");
+ lda #$a9
+ sta label`.replace("\n","");
 
 function App() {
     const [machine, setMachine] = useState(new Machine(new Array(65536).fill(0)));

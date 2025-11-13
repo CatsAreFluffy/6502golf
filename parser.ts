@@ -82,13 +82,8 @@ class ParseError extends Error {
     }
 }
 
-type Operand = {mode: "immediate" | "absolute", body: number}
-function parse_operand(stream: TokenStream): Operand {
-    let mode: "immediate" | "absolute" = "absolute";
-    if(stream.peek().token == "#") {
-        mode = "immediate";
-        stream.next();
-    }
+type Expr = number | string;
+function parse_expr(stream: TokenStream): Expr {
     let value = stream.next();
     if(value.kind == "newline") {
         throw new ParseError("Instructions must have arguments", value);
@@ -96,15 +91,28 @@ function parse_operand(stream: TokenStream): Operand {
     if(value.kind == "symbol") {
         throw new ParseError("Instruction arguments must not be symbols", value);
     }
-    let body = 0;
+    let body: number | string = 0;
     if(value.token[0] == "$") {
         body = parseInt(value.token.slice(1), 16);
-    } else {
+    } else if (value.token[0].match(/[0-9]/)) {
         body = parseInt(value.token);
+    } else {
+        body = value.token;
     }
-    if(isNaN(body)) {
+    if(typeof body == "number" && isNaN(body)) {
         throw new ParseError("Invalid number", value);
     }
+    return body;
+}
+
+type Operand = {mode: "immediate" | "absolute", body: Expr}
+function parse_operand(stream: TokenStream): Operand {
+    let mode: "immediate" | "absolute" = "absolute";
+    if(stream.peek().token == "#") {
+        mode = "immediate";
+        stream.next();
+    }
+    let body = parse_expr(stream);
     return {mode, body};
 }
 
@@ -142,4 +150,4 @@ function parse(tokens: Token[]): Program {
     return parse_program(new TokenStream(tokens));
 }
 
-export { lex, parse, Operand, Line, Program };
+export { lex, parse, Expr, Operand, Line, Program };
