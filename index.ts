@@ -31,6 +31,17 @@ const requestListener = function(req: http.IncomingMessage, res: http.ServerResp
                 res.end(data);
             })
             break;
+        case "/style.css":
+            fs.readFile("style.css", "utf8", (err, data) => {
+                if(err) {
+                    console.error("Error:", err);
+                    return;
+                }
+                res.setHeader("Content-Type", "text/css");
+                res.writeHead(200);
+                res.end(data);
+            })
+            break;
         default:
             res.writeHead(404);
             res.end();

@@ -1,0 +1,11 @@
+.viewer {
+    font-family: 'Courier New', Courier, monospace;
+}
+
+.last-instruction {
+    background-color: lightcoral;
+}
+
+.last-data {
+    background-color: cornflowerblue;
+}

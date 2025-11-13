@@ -19,7 +19,7 @@ export default function MachineView({ machine: m }: {machine: Machine}) {
         }
     }
     return (
-        <div>
+        <div className="viewer">
             Cycles: {m.cycles} <br />
             PC: {hex(m.pc, 4)} A: {hex(m.a)} X: {hex(m.x)} Y: {hex(m.y)} S: {hex(m.s)} P: {names2}
             <br />
