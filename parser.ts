@@ -105,9 +105,12 @@ function parse_expr(stream: TokenStream): Expr {
     return body;
 }
 
-type AddressingMode = "immediate" | "absolute" | "absolute,x" | "absolute,y";
+type AddressingMode =  "absolute" | "absolute,x" | "absolute,y" | "immediate" | "implicit";
 type Operand = {mode: AddressingMode, body: Expr};
 function parse_operand(stream: TokenStream): Operand {
+    if(stream.eof() || stream.peek().kind == "newline") {
+        return {mode: "implicit", body: 0};
+    }
     let mode: AddressingMode = "absolute";
     if(stream.peek().token == "#") {
         mode = "immediate";

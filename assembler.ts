@@ -15,12 +15,21 @@ export default function assemble(program: Program): number[] {
     ret[0xfffd] = 2;
     let org = 0x200;
     const instructions = new Map([
+        ["asl", new Map([
+            ["implicit", 0x0a],
+        ])],
         ["lda", new Map([
             ["absolute", 0xad],
             ["immediate", 0xa9],
         ])],
         ["ldx", new Map([
             ["immediate", 0xa2],
+        ])],
+        ["rol", new Map([
+            ["implicit", 0x2a],
+        ])],
+        ["sec", new Map([
+            ["implicit", 0x38],
         ])],
         ["sta", new Map([
             ["absolute", 0x8d],
@@ -31,6 +40,7 @@ export default function assemble(program: Program): number[] {
         ["absolute", 2],
         ["absolute,x", 2],
         ["immediate", 1],
+        ["implicit", 0],
     ])
     for(let command of program) {
         switch(command.type) {
@@ -47,7 +57,7 @@ export default function assemble(program: Program): number[] {
                 ret[org] = opcode;
                 org = (org + 1) & 0xffff;
                 let operand_length = operand_lengths.get(operand.mode);
-                if(!operand_length) {
+                if(operand_length === undefined) {
                     throw new Error(`Unknown length for addressing mode ${operand.mode}`);
                 }
                 relocations.push({

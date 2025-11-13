@@ -91,6 +91,9 @@ export default class Machine {
     step() {
         let instruction_start = this.pc;
         const opcodes = new Map([
+            [0x0a, ["asl.a", "implicit"]],
+            [0x2a, ["rol.a", "implicit"]],
+            [0x38, ["sec", "implicit"]],
             [0x8d, ["sta", "absolute"]],
             [0x9d, ["sta", "absolute,x"]],
             [0xa2, ["ldx", "immediate"]],
@@ -125,15 +128,24 @@ export default class Machine {
                 effective_address = this.pc;
                 this.pc++;
                 break;
+            case "implicit":
+                break;
             default:
                 throw new Error(`Unknown addressing mode ${mode}`);
         }
-        if(mode == "immediate") {
+        if(mode == "immediate" || mode == "implicit") {
             this.last_data = new MemoryRange(0, 0);
         } else {
             this.last_data = new MemoryRange(effective_address, (effective_address + 1) & 0xffff);
         }
         switch(instruction) {
+            case "asl.a": {
+                let shifted = this.a << 1;
+                this.a = shifted & 0xff;
+                this.set_nz(this.a);
+                this.c = (shifted >> 8) > 0;
+                break;
+            }
             case "lda":
                 this.a = this.read(effective_address);
                 this.set_nz(this.a);
@@ -141,6 +153,16 @@ export default class Machine {
             case "ldx":
                 this.x = this.read(effective_address);
                 this.set_nz(this.x);
+                break;
+            case "rol.a": {
+                let shifted = this.a << 1 | +this.c;
+                this.a = shifted & 0xff;
+                this.set_nz(this.a);
+                this.c = (shifted >> 8) > 0;
+                break;
+            }
+            case "sec":
+                this.c = true;
                 break;
             case "sta":
                 this.write(effective_address, this.a);
