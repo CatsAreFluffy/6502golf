@@ -92,13 +92,15 @@ export default class Machine {
         let instruction_start = this.pc;
         const opcodes = new Map([
             [0x8d, ["sta", "absolute"]],
+            [0x9d, ["sta", "absolute,x"]],
+            [0xa2, ["ldx", "immediate"]],
             [0xa9, ["lda", "immediate"]],
             [0xad, ["lda", "absolute"]],
         ]);
         let opcode = this.read_instruction();
         let decode = opcodes.get(opcode);
         if(!decode) {
-            throw new Error(`Unknown opcode ${opcode}`);
+            throw new Error(`Unknown opcode ${opcode.toString(16).padStart(2, "0")}`);
         }
         let [instruction, mode] = decode;
         let effective_address = 0;
@@ -107,6 +109,16 @@ export default class Machine {
                 let low = this.read_instruction();
                 let high = this.read_instruction();
                 effective_address = (high << 8) | low;
+                break;
+            }
+            case "absolute,x": {
+                let low = this.read_instruction();
+                let high = this.read_instruction();
+                let base_address = (high << 8) | low;
+                effective_address = (base_address + this.x) & 0xffff;
+                if((base_address >> 8) != (effective_address >> 8)) {
+                    this.read((effective_address - 256) & 0xffff);
+                }
                 break;
             }
             case "immediate": 
@@ -125,6 +137,10 @@ export default class Machine {
             case "lda":
                 this.a = this.read(effective_address);
                 this.set_nz(this.a);
+                break;
+            case "ldx":
+                this.x = this.read(effective_address);
+                this.set_nz(this.x);
                 break;
             case "sta":
                 this.write(effective_address, this.a);

@@ -19,12 +19,17 @@ export default function assemble(program: Program): number[] {
             ["absolute", 0xad],
             ["immediate", 0xa9],
         ])],
+        ["ldx", new Map([
+            ["immediate", 0xa2],
+        ])],
         ["sta", new Map([
             ["absolute", 0x8d],
+            ["absolute,x", 0x9d],
         ])],
     ]);
     const operand_lengths = new Map([
         ["absolute", 2],
+        ["absolute,x", 2],
         ["immediate", 1],
     ])
     for(let command of program) {

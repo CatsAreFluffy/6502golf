@@ -105,14 +105,32 @@ function parse_expr(stream: TokenStream): Expr {
     return body;
 }
 
-type Operand = {mode: "immediate" | "absolute", body: Expr}
+type AddressingMode = "immediate" | "absolute" | "absolute,x" | "absolute,y";
+type Operand = {mode: AddressingMode, body: Expr};
 function parse_operand(stream: TokenStream): Operand {
-    let mode: "immediate" | "absolute" = "absolute";
+    let mode: AddressingMode = "absolute";
     if(stream.peek().token == "#") {
         mode = "immediate";
         stream.next();
     }
     let body = parse_expr(stream);
+    if(!stream.eof() && stream.peek().token == ",") {
+        let comma = stream.next();
+        if(mode != "absolute") {
+            throw new ParseError("Unexpected , after operand", comma);
+        }
+        let index = stream.next();
+        switch(index.token) {
+            case "x":
+                mode = "absolute,x";
+                break;
+            case "y":
+                mode = "absolute,y";
+                break;
+            default:
+                throw new ParseError("Unexpected token after ,", index);
+        }
+    }
     return {mode, body};
 }
 
@@ -183,4 +201,4 @@ function parse(tokens: Token[]): Program {
     return parse_program(new TokenStream(tokens));
 }
 
-export { lex, parse, Expr, Operand, Command, Program };
+export { lex, parse, Expr, AddressingMode, Operand, Command, Program };
