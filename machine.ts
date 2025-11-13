@@ -92,6 +92,7 @@ export default class Machine {
         let instruction_start = this.pc;
         const opcodes = new Map([
             [0x0a, ["asl.a", "implicit"]],
+            [0x10, ["bpl", "relative"]],
             [0x18, ["clc", "implicit"]],
             [0x2a, ["rol.a", "implicit"]],
             [0x2e, ["rol", "absolute"]],
@@ -178,12 +179,14 @@ export default class Machine {
                 break;
             }
             case "bcc":
-            case "bne": {
+            case "bne":
+            case "bpl": {
                 is_jump = true;
                 this.last_instruction = new MemoryRange(instruction_start, this.pc);
                 let conditions = {
                     bcc: !this.c,
                     bne: !this.z,
+                    bpl: !this.n,
                 };
                 if(conditions[instruction]) {
                     this.read_instruction();

@@ -27,9 +27,32 @@ fill
  adc #10
  bcc nocarry
  iny
+ clc
 nocarry
  inx
  bne fill
+ org $0300
+fill2
+ sta mul10l,x
+ sta mul10l+128,x
+ sta tmp0
+ tya
+ sta mul10h,x
+ adc #5
+ sta mul10h+128,x
+ lda #1
+ sta array,x
+ sta array+128,x
+ lda tmp0
+ adc #10
+ bcc nocarry2
+ iny
+ clc
+nocarry2
+ inx
+ bpl fill2
+ org $fffc
+ word $0200
 `.replace(/^\n|\n$/g,"");
 
 function assemble_source(src: string): Machine | undefined {

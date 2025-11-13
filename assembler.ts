@@ -8,6 +8,58 @@ type Relocation = {
     relative: boolean,
 }
 
+function eval_expr(expr: Expr, labels: Map<string, number>): number {
+    switch(expr.type) {
+        case "binop":
+            let left = eval_expr(expr.left, labels);
+            let right = eval_expr(expr.right, labels);
+            switch(expr.operation) {
+                case "+":
+                    return (left + right) | 0;
+                case "-":
+                    return (left - right) | 0;
+                case "*":
+                    let top = (left * (right & 0xffff0000)) | 0;
+                    let bottom = (left * (right & 0xffff)) | 0;
+                    return (top + bottom) | 0;
+                case "/":
+                    throw new Error("/ is unimplemented");
+                case "%":
+                    throw new Error("/ is unimplemented");
+                case "<<":
+                    return left << right;
+                case ">>":
+                    return left >> right;
+                case "&":
+                    return left & right;
+                case "|":
+                    return left | right;
+                case "^":
+                    return left ^ right;
+            }
+        case "op":
+            let body = eval_expr(expr.body, labels);
+            switch(expr.operation) {
+                case "-":
+                    return -body | 0;
+                case "~":
+                    return ~body;
+                case "<":
+                    return body & 0xff;
+                case ">":
+                    return (body >> 8) & 0xff;
+            }
+        case "label":
+            let value = labels.get(expr.label);
+            if(value === undefined) {
+                throw new Error(`Unknown label ${expr.label}`);
+            }
+            return value;
+        case "constant":
+            return expr.value;
+    }
+}
+
 type AddressingMode = ParseAddressingMode | "relative";
 export default function assemble(program: Program): number[] {
     let ret = new Array(65536).fill(0);
@@ -29,6 +81,9 @@ export default function assemble(program: Program): number[] {
         ])],
         ["bne", new Map([
             ["absolute", 0xd0],
+        ])],
+        ["bpl", new Map([
+            ["absolute", 0x10],
         ])],
         ["clc", new Map([
             ["implicit", 0x18],
@@ -73,7 +128,7 @@ export default function assemble(program: Program): number[] {
             ["implicit", 0x98],
         ])],
     ]);
-    const branch_instructions = new Set(["bcc", "bne"]);
+    const branch_instructions = new Set(["bcc", "bne", "bpl"]);
     const operand_lengths = new Map([
         ["absolute", 2],
         ["absolute,x", 2],
@@ -128,25 +183,12 @@ export default function assemble(program: Program): number[] {
                 labels.set(command.body, org);
                 break;
             case "org":
-                if(typeof command.base == "string") {
-                    console.log(command);
-                    throw new Error("`org` base must be a constant");
-                }
-                org = command.base & 0xffff;
+                org = eval_expr(command.base, new Map());
                 break;
         }
     }
     for(let {address, instruction_address, length, expr, relative} of relocations) {
-        let value = expr;
-        if(typeof expr == "string") {
-            let value2 = labels.get(expr);
-            if(value2 === undefined) {
-                throw new Error(`Unknown label ${expr}`);
-            }
-            value = value2;
-        } else {
-            value = expr;
-        }
+        let value = eval_expr(expr, labels);
         if(relative) {
             value = (value - instruction_address) & 0xffff;
         }

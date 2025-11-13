@@ -82,34 +82,76 @@ class ParseError extends Error {
     }
 }
 
-type Expr = number | string;
+type Expr = {
+    type: "binop",
+    operation: "+" | "-" | "*" | "/" | "%" | "<<" | ">>" | "&" | "|" | "^",
+    left: Expr,
+    right: Expr,
+} | {
+    type: "op",
+    operation: "-" | "~" | "<" | ">",
+    body: Expr,
+} | {
+    type: "label",
+    label: string,
+} | {
+    type: "constant",
+    value: number,
+};
+function parse_short_expr(stream: TokenStream): Expr {
+    let next = stream.next();
+    switch(next.kind) {
+        case "identifier":
+            let head: Expr;
+            if(next.token[0] == "$") {
+                let value = parseInt(next.token.slice(1), 16);
+                if(isNaN(value)) {
+                    throw new ParseError("Invalid number", next);
+                }
+                return {type: "constant", value};
+            } else if(next.token.match(/^[0-9]/)) {
+                let value = parseInt(next.token);
+                if(isNaN(value)) {
+                    throw new ParseError("Invalid number", next);
+                }
+                return {type: "constant", value};
+            } else {
+                return {type: "label", label: next.token};
+            }
+            break;
+        case "symbol":
+            if(next.token.match(/-|~|<|>/)) {
+                let rest = parse_short_expr(stream);
+                return {type: "op", operation: next.token as any, body: rest};
+            } else if(next.token == "[") {
+                let body = parse_expr(stream);
+                if(stream.next().token != "]") {
+                    throw new ParseError("Unclosed bracket", next);
+                }
+                return body;
+            } else {
+                throw new ParseError("Invalid operator", next);
+            }
+            break;
+        default:
+            throw new ParseError("Expressions cannot be empty", next);
+    }
+}
 function parse_expr(stream: TokenStream): Expr {
-    let value = stream.next();
-    if(value.kind == "newline") {
-        throw new ParseError("Instructions must have arguments", value);
+    let head = parse_short_expr(stream);
+    while(!stream.eof() && stream.peek().kind == "symbol" && stream.peek().token.match(/^[+\-*/&|^]$|^<<$|^>>$/)) {
+        let operation = stream.next().token as "+" | "-" | "*" | "/" | "%" | "<<" | ">>" | "&" | "|" | "^";
+        let right = parse_short_expr(stream);
+        head = {type: "binop", operation, left: head, right};
     }
-    if(value.kind == "symbol") {
-        throw new ParseError("Instruction arguments must not be symbols", value);
-    }
-    let body: number | string = 0;
-    if(value.token[0] == "$") {
-        body = parseInt(value.token.slice(1), 16);
-    } else if (value.token[0].match(/[0-9]/)) {
-        body = parseInt(value.token);
-    } else {
-        body = value.token;
-    }
-    if(typeof body == "number" && isNaN(body)) {
-        throw new ParseError("Invalid number", value);
-    }
-    return body;
+    return head;
 }
 
 type AddressingMode =  "absolute" | "absolute,x" | "absolute,y" | "immediate" | "implicit";
 type Operand = {mode: AddressingMode, body: Expr};
 function parse_operand(stream: TokenStream): Operand {
     if(stream.eof() || stream.peek().kind == "newline") {
-        return {mode: "implicit", body: 0};
+        return {mode: "implicit", body: {type: "constant", value: 0}};
     }
     let mode: AddressingMode = "absolute";
     if(stream.peek().token == "#") {
