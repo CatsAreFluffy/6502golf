@@ -44,6 +44,16 @@ export default function assemble(program: Program): number[] {
     ])
     for(let command of program) {
         switch(command.type) {
+            case "dc": {
+                relocations.push({
+                    address: org,
+                    instruction_address: org,
+                    length: command.length,
+                    expr: command.value,
+                })
+                org = (org + command.length) & 0xffff;
+                break;
+            }
             case "instruction": {
                 let [instruction, operand] = command.body;
                 let modes = instructions.get(instruction);
@@ -71,6 +81,14 @@ export default function assemble(program: Program): number[] {
             }
             case "label":
                 labels.set(command.body, org);
+                break;
+            case "org":
+                if(typeof command.base == "string") {
+                    console.log(command);
+                    throw new Error("`org` base must be a constant");
+                }
+                org = command.base & 0xffff;
+                break;
         }
     }
     for(let {address, instruction_address, length, expr} of relocations) {

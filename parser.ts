@@ -165,6 +165,36 @@ type Command = {
 } | {
     type: "instruction",
     body: Instruction,
+} | {
+    type: "org",
+    base: Expr,
+} | {
+    type: "dc",
+    length: number,
+    value: Expr,
+};
+function parse_command(stream: TokenStream): Command {
+    let name = stream.peek().token;
+    switch(name) {
+        case "org":
+            stream.next();
+            return {type: "org", base: parse_expr(stream)};
+        case "dc.b":
+        case "dc.w":
+        case "byte":
+        case "word": {
+            stream.next();
+            let lengths = new Map([
+                ["dc.b", 1],
+                ["byte", 1],
+                ["dc.w", 2],
+                ["word", 2],
+            ]);
+            return {type: "dc", length: lengths.get(name)!, value: parse_expr(stream)};
+        }
+        default:
+            return {type: "instruction", body: parse_instruction(stream)}
+    }
 }
 function parse_line(stream: TokenStream): Command[] {
     let ret: Command[] = [];
@@ -175,7 +205,8 @@ function parse_line(stream: TokenStream): Command[] {
         stream.next();
     }
     if(!stream.eof() && stream.peek().kind != "newline") {
-        ret.push({type: "instruction", body: parse_instruction(stream)});
+        // ret.push({type: "instruction", body: parse_instruction(stream)});
+        ret.push(parse_command(stream));
     }
     return ret;
 }
