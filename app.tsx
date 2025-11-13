@@ -8,8 +8,7 @@ import MachineView from "./machine_view";
 
 const default_code = `
  org 0
-fillcntl byte 0
-fillcnth byte 0
+tmp0 byte 0
  org $0400
 mul10l
  org $0500
@@ -17,17 +16,31 @@ mul10h
  org $0200
 fill
  sta mul10l,x
- sta fillcntl
- lda fillcnth
- adc #0
+ sta tmp0
+ tya
  sta mul10h,x
- sta fillcnth
- lda fillcntl
- clc
+ lda tmp0
  adc #10
+ bcc nocarry
+ iny
+nocarry
  inx
  bne fill
+fillslow
+ sta mul10l,x
+ sta tmp0
+ tya
+ adc #0
+ sta mul10h,x
+ tay
+ lda tmp0
+ adc #10
+ inx
+ bne fillslow
 `.replace(/^\n|\n$/g,"");
+
+// old was 35
+// this is 28/29
 
 function assemble_source(src: string): Machine | undefined {
         console.log("src:", src);
@@ -61,10 +74,21 @@ function App() {
         setMachine(new_machine);
     }
 
+    const handleStepIter = () => {
+        let new_machine = machine.clone();
+        let last_pc = -1;
+        while(last_pc < new_machine.pc) {
+            last_pc = new_machine.pc;
+            new_machine.step();
+        }
+        setMachine(new_machine);
+    }
+
     return (
         <>
             <ReactCodeMirror value={default_code} onChange={handleChange}/>
             <button onClick={handleStep}>Step</button>
+            <button onClick={handleStepIter}>Step until backwards jump</button>
             <MachineView machine={machine} />
         </>
     );

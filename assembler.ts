@@ -24,6 +24,9 @@ export default function assemble(program: Program): number[] {
         ["asl", new Map([
             ["implicit", 0x0a],
         ])],
+        ["bcc", new Map([
+            ["absolute", 0x90],
+        ])],
         ["bne", new Map([
             ["absolute", 0xd0],
         ])],
@@ -35,6 +38,9 @@ export default function assemble(program: Program): number[] {
         ])],
         ["inx", new Map([
             ["implicit", 0xe8],
+        ])],
+        ["iny", new Map([
+            ["implicit", 0xc8],
         ])],
         ["lda", new Map([
             ["absolute", 0xad],
@@ -57,11 +63,17 @@ export default function assemble(program: Program): number[] {
         ["stx", new Map([
             ["absolute", 0x8e],
         ])],
+        ["tay", new Map([
+            ["implicit", 0xa8],
+        ])],
         ["txa", new Map([
             ["implicit", 0x8a],
-        ])]
+        ])],
+        ["tya", new Map([
+            ["implicit", 0x98],
+        ])],
     ]);
-    const branch_instructions = new Set(["bne"]);
+    const branch_instructions = new Set(["bcc", "bne"]);
     const operand_lengths = new Map([
         ["absolute", 2],
         ["absolute,x", 2],

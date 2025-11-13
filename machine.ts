@@ -101,10 +101,14 @@ export default class Machine {
             [0x8a, ["txa", "implicit"]],
             [0x8d, ["sta", "absolute"]],
             [0x8e, ["stx", "absolute"]],
+            [0x90, ["bcc", "relative"]],
+            [0x98, ["tya", "implicit"]],
             [0x9d, ["sta", "absolute,x"]],
             [0xa2, ["ldx", "immediate"]],
+            [0xa8, ["tay", "implicit"]],
             [0xa9, ["lda", "immediate"]],
             [0xad, ["lda", "absolute"]],
+            [0xc8, ["iny", "implicit"]],
             [0xca, ["dex", "implicit"]],
             [0xd0, ["bne", "relative"]],
             [0xe8, ["inx", "implicit"]],
@@ -173,10 +177,15 @@ export default class Machine {
                 this.c = (shifted >> 8) > 0;
                 break;
             }
+            case "bcc":
             case "bne": {
                 is_jump = true;
                 this.last_instruction = new MemoryRange(instruction_start, this.pc);
-                if(!this.z) {
+                let conditions = {
+                    bcc: !this.c,
+                    bne: !this.z,
+                };
+                if(conditions[instruction]) {
                     this.read_instruction();
                     if((effective_address >> 8) != (this.pc >> 8)) {
                         this.read((this.pc & 0xff00) | (effective_address & 0xff));
@@ -198,6 +207,11 @@ export default class Machine {
             case "inx": {
                 this.x = (this.x + 1) & 0xff;
                 this.set_nz(this.x);
+                break;
+            }
+            case "iny": {
+                this.y = (this.y + 1) & 0xff;
+                this.set_nz(this.y);
                 break;
             }
             case "lda":
@@ -231,8 +245,16 @@ export default class Machine {
             case "stx":
                 this.write(effective_address, this.x);
                 break;
+            case "tay":
+                this.y = this.a;
+                this.set_nz(this.y);
+                break;
             case "txa":
                 this.a = this.x;
+                this.set_nz(this.a);
+                break;
+            case "tya":
+                this.a = this.y;
                 this.set_nz(this.a);
                 break;
             default:
