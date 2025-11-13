@@ -1,4 +1,4 @@
-import { Operand, Line, Program, Expr } from "./parser";
+import { Operand, Command, Program, Expr } from "./parser";
 
 type Relocation = {
     address: number,
@@ -10,6 +10,7 @@ type Relocation = {
 export default function assemble(program: Program): number[] {
     let ret = new Array(65536).fill(0);
     let relocations: Relocation[] = [];
+    let labels: Map<string, number> = new Map();
     // reset=0x200
     ret[0xfffd] = 2;
     let org = 0x200;
@@ -26,33 +27,45 @@ export default function assemble(program: Program): number[] {
         ["absolute", 2],
         ["immediate", 1],
     ])
-    for(let [instruction, operand] of program) {
-        let modes = instructions.get(instruction);
-        if(!modes) {
-            throw new Error(`Unknown opcode ${instruction}`);
+    for(let command of program) {
+        switch(command.type) {
+            case "instruction": {
+                let [instruction, operand] = command.body;
+                let modes = instructions.get(instruction);
+                if(!modes) {
+                    throw new Error(`Unknown opcode ${instruction}`);
+                }
+                let opcode = modes.get(operand.mode);
+                if(!opcode) {
+                    throw new Error(`Illegal addressing mode ${operand.mode} for ${instruction}`);
+                }
+                ret[org] = opcode;
+                org = (org + 1) & 0xffff;
+                let operand_length = operand_lengths.get(operand.mode);
+                if(!operand_length) {
+                    throw new Error(`Unknown length for addressing mode ${operand.mode}`);
+                }
+                relocations.push({
+                    address: org,
+                    instruction_address: (org - 1) & 0xffff,
+                    length: operand_length,
+                    expr: operand.body,
+                })
+                org = (org + operand_length) & 0xffff;
+                break;
+            }
+            case "label":
+                labels.set(command.body, org);
         }
-        let opcode = modes.get(operand.mode);
-        if(!opcode) {
-            throw new Error(`Illegal addressing mode ${operand.mode} for ${instruction}`);
-        }
-        ret[org] = opcode;
-        org = (org + 1) & 0xffff;
-        let operand_length = operand_lengths.get(operand.mode);
-        if(!operand_length) {
-            throw new Error(`Unknown length for addressing mode ${operand.mode}`);
-        }
-        relocations.push({
-            address: org,
-            instruction_address: (org - 1) & 0xffff,
-            length: operand_length,
-            expr: operand.body,
-        })
-        org = (org + operand_length) & 0xffff;
     }
     for(let {address, instruction_address, length, expr} of relocations) {
         let value = expr;
         if(typeof expr == "string") {
-            value = 0x205;
+            let value2 = labels.get(expr);
+            if(value2 === undefined) {
+                throw new Error(`Unknown label ${expr}`);
+            }
+            value = value2;
         } else {
             value = expr;
         }

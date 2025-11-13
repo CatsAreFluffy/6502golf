@@ -116,12 +116,8 @@ function parse_operand(stream: TokenStream): Operand {
     return {mode, body};
 }
 
-type Line = [string, Operand]
-function parse_line(stream: TokenStream): Line {
-    let indent = stream.next();
-    if(indent.kind != "indent") {
-        throw new ParseError("Instructions must be indented", indent);
-    }
+type Instruction = [string, Operand]
+function parse_instruction(stream: TokenStream): Instruction {
     let opcode = stream.next();
     if(opcode.kind != "identifier") {
         throw new ParseError("Instructions must not be symbols", opcode);
@@ -129,7 +125,37 @@ function parse_line(stream: TokenStream): Line {
     return [opcode.token, parse_operand(stream)];
 }
 
-type Program = Line[]
+type Label = string;
+function parse_label(stream: TokenStream): Label {
+    let label = stream.next();
+    if(label.kind != "identifier") {
+        throw new ParseError("Labels must not be symbols", label);
+    }
+    return label.token;
+}
+
+type Command = {
+    type: "label",
+    body: Label,
+} | {
+    type: "instruction",
+    body: Instruction,
+}
+function parse_line(stream: TokenStream): Command[] {
+    let ret: Command[] = [];
+    let indent = stream.peek()
+    if(indent.kind != "indent") {
+        ret.push({type: "label", body: parse_label(stream)});
+    } else {
+        stream.next();
+    }
+    if(!stream.eof() && stream.peek().kind != "newline") {
+        ret.push({type: "instruction", body: parse_instruction(stream)});
+    }
+    return ret;
+}
+
+type Program = Command[]
 function parse_program(stream: TokenStream): Program {
     let ret = [];
     while(!stream.eof()) {
@@ -141,7 +167,10 @@ function parse_program(stream: TokenStream): Program {
         }
         let line = parse_line(stream);
         console.log("prog", line, stream.index);
-        ret.push(line);
+        // for(let command of line) {
+        //     ret.push(command);
+        // }
+        ret.push(...line);
     }
     return ret;
 }
@@ -150,4 +179,4 @@ function parse(tokens: Token[]): Program {
     return parse_program(new TokenStream(tokens));
 }
 
-export { lex, parse, Expr, Operand, Line, Program };
+export { lex, parse, Expr, Operand, Command, Program };

@@ -8,7 +8,8 @@ import MachineView from "./machine_view";
 
 const default_code = `
  lda #$a9
- sta label`.replace("\n","");
+ sta label
+label`.replace("\n","");
 
 function assemble_source(src: string): Machine | undefined {
         console.log("src:", src);
