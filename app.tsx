@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import ReactCodeMirror from "@uiw/react-codemirror";
+import ReactCodeMirror, { ViewUpdate } from "@uiw/react-codemirror";
 
 import { lex, parse } from "./parser";
 import assemble from "./assembler";
@@ -13,7 +13,7 @@ const default_code = `
 function App() {
     const [machine, setMachine] = useState(new Machine(new Array(65536).fill(0)));
 
-    const handleChange = React.useCallback((val, viewUpdate) => {
+    const handleChange = React.useCallback((val: string, viewUpdate: ViewUpdate) => {
         console.log("val:", val);
         let tokens = lex(val)
         console.log("lex:", tokens);
