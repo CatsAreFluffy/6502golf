@@ -122,7 +122,7 @@ export default function assemble(program: Program): number[] {
             value = (value - instruction_address) & 0xffff;
         }
         for(let i = 0; i < length; i++) {
-            ret[(address + i) & 0xffff] = value & 255;
+            ret[(address + i) & 0xffff] = value & 0xff;
             value >>= 8;
         }
     }
