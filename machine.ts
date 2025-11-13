@@ -92,15 +92,22 @@ export default class Machine {
         let instruction_start = this.pc;
         const opcodes = new Map([
             [0x0a, ["asl.a", "implicit"]],
+            [0x18, ["clc", "implicit"]],
             [0x2a, ["rol.a", "implicit"]],
+            [0x2e, ["rol", "absolute"]],
             [0x38, ["sec", "implicit"]],
+            [0x69, ["adc", "immediate"]],
+            [0x6d, ["adc", "absolute"]],
+            [0x8a, ["txa", "implicit"]],
             [0x8d, ["sta", "absolute"]],
+            [0x8e, ["stx", "absolute"]],
             [0x9d, ["sta", "absolute,x"]],
             [0xa2, ["ldx", "immediate"]],
             [0xa9, ["lda", "immediate"]],
             [0xad, ["lda", "absolute"]],
             [0xca, ["dex", "implicit"]],
             [0xd0, ["bne", "relative"]],
+            [0xe8, ["inx", "implicit"]],
         ]);
         let opcode = this.read_instruction();
         let decode = opcodes.get(opcode);
@@ -150,6 +157,15 @@ export default class Machine {
         }
         let is_jump = false;
         switch(instruction) {
+            case "adc": {
+                let value = this.read(effective_address);
+                let result = this.a + value + +this.c;
+                this.v = ((this.a & 0x80) == (value & 0x80)) && ((this.a & 0x80) != (result & 0x80));
+                this.a = result & 0xff;
+                this.set_nz(this.a);
+                this.c = result >= 256;
+                break;
+            }
             case "asl.a": {
                 let shifted = this.a << 1;
                 this.a = shifted & 0xff;
@@ -169,8 +185,18 @@ export default class Machine {
                 }
                 break;
             }
+            case "clc":
+            case "sec": {
+                this.c = instruction == "sec";
+                break;
+            }
             case "dex": {
                 this.x = (this.x - 1) & 0xff;
+                this.set_nz(this.x);
+                break;
+            }
+            case "inx": {
+                this.x = (this.x + 1) & 0xff;
                 this.set_nz(this.x);
                 break;
             }
@@ -189,11 +215,25 @@ export default class Machine {
                 this.c = (shifted >> 8) > 0;
                 break;
             }
-            case "sec":
-                this.c = true;
+            case "rol": {
+                let value = this.read(effective_address);
+                this.write(effective_address, value);
+                let shifted = value << 1 | +this.c;
+                let result = shifted & 0xff;
+                this.write(effective_address, result);
+                this.set_nz(result);
+                this.c = (shifted >> 8) > 0;
                 break;
+            }
             case "sta":
                 this.write(effective_address, this.a);
+                break;
+            case "stx":
+                this.write(effective_address, this.x);
+                break;
+            case "txa":
+                this.a = this.x;
+                this.set_nz(this.a);
                 break;
             default:
                 throw new Error(`Unknown instruction ${instruction}`);

@@ -17,14 +17,24 @@ export default function assemble(program: Program): number[] {
     ret[0xfffd] = 2;
     let org = 0x200;
     const instructions = new Map([
+        ["adc", new Map([
+            ["absolute", 0x6d],
+            ["immediate", 0x69],
+        ])],
         ["asl", new Map([
             ["implicit", 0x0a],
         ])],
         ["bne", new Map([
             ["absolute", 0xd0],
         ])],
+        ["clc", new Map([
+            ["implicit", 0x18],
+        ])],
         ["dex", new Map([
             ["implicit", 0xca],
+        ])],
+        ["inx", new Map([
+            ["implicit", 0xe8],
         ])],
         ["lda", new Map([
             ["absolute", 0xad],
@@ -35,6 +45,7 @@ export default function assemble(program: Program): number[] {
         ])],
         ["rol", new Map([
             ["implicit", 0x2a],
+            ["absolute", 0x2e],
         ])],
         ["sec", new Map([
             ["implicit", 0x38],
@@ -43,6 +54,12 @@ export default function assemble(program: Program): number[] {
             ["absolute", 0x8d],
             ["absolute,x", 0x9d],
         ])],
+        ["stx", new Map([
+            ["absolute", 0x8e],
+        ])],
+        ["txa", new Map([
+            ["implicit", 0x8a],
+        ])]
     ]);
     const branch_instructions = new Set(["bne"]);
     const operand_lengths = new Map([

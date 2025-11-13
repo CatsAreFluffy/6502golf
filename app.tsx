@@ -7,11 +7,26 @@ import Machine from "./machine";
 import MachineView from "./machine_view";
 
 const default_code = `
- lda #$42
- ldx #$20
-loop dex
- sta $8000,x
- bne loop
+ org 0
+fillcntl byte 0
+fillcnth byte 0
+ org $0400
+mul10l
+ org $0500
+mul10h
+ org $0200
+fill
+ sta mul10l,x
+ sta fillcntl
+ lda fillcnth
+ adc #0
+ sta mul10h,x
+ sta fillcnth
+ lda fillcntl
+ clc
+ adc #10
+ inx
+ bne fill
 `.replace(/^\n|\n$/g,"");
 
 function assemble_source(src: string): Machine | undefined {
