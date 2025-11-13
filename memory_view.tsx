@@ -26,7 +26,7 @@ export default function MemoryView({ memory }: {memory: number[]}) {
         if(!nonzero) {
             continue;
         }
-        ret.push(<MemoryLine memory={memory} index={i} length={length} />);
+        ret.push(<MemoryLine key={i} memory={memory} index={i} length={length}/>);
     }
     return <table><tbody><tr><td></td>{top_line}</tr>{ret}</tbody></table>;
 }
