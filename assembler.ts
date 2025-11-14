@@ -60,7 +60,7 @@ function eval_expr(expr: Expr, labels: Map<string, number>): number {
     }
 }
 
-type AddressingMode = ParseAddressingMode | "relative";
+type AddressingMode = ParseAddressingMode | "relative" | "zeropage";
 export default function assemble(program: Program): number[] {
     let ret = new Array(65536).fill(0);
     let relocations: Relocation[] = [];
@@ -71,23 +71,25 @@ export default function assemble(program: Program): number[] {
     const instructions = new Map([
         ["adc", new Map([
             ["absolute", 0x6d],
+            ["absolute,x", 0x7d],
             ["immediate", 0x69],
+            ["zeropage", 0x65],
         ])],
         ["asl", new Map([
             ["absolute", 0x0e],
             ["implicit", 0x0a],
         ])],
         ["bcc", new Map([
-            ["absolute", 0x90],
+            ["relative", 0x90],
         ])],
         ["bcs", new Map([
-            ["absolute", 0xb0],
+            ["relative", 0xb0],
         ])],
         ["bne", new Map([
-            ["absolute", 0xd0],
+            ["relative", 0xd0],
         ])],
         ["bpl", new Map([
-            ["absolute", 0x10],
+            ["relative", 0x10],
         ])],
         ["brk", new Map([
             ["implicit", 0x00],
@@ -111,23 +113,28 @@ export default function assemble(program: Program): number[] {
             ["absolute", 0xad],
             ["immediate", 0xa9],
             ["absolute,x", 0xbd],
+            ["zeropage", 0xa5],
         ])],
         ["ldx", new Map([
             ["immediate", 0xa2],
             ["absolute", 0xae],
             ["absolute,y", 0xbe],
+            ["zeropage", 0xa6],
         ])],
         ["ldy", new Map([
             ["immediate", 0xa0],
             ["absolute", 0xac],
+            ["zeropage", 0xa4],
         ])],
         ["rol", new Map([
             ["implicit", 0x2a],
             ["absolute", 0x2e],
             ["absolute,x", 0x3e],
+            ["zeropage", 0x26],
         ])],
         ["sbc", new Map([
             ["absolute", 0xed],
+            ["zeropage", 0xe5],
         ])],
         ["sec", new Map([
             ["implicit", 0x38],
@@ -136,12 +143,15 @@ export default function assemble(program: Program): number[] {
             ["absolute", 0x8d],
             ["absolute,x", 0x9d],
             ["absolute,y", 0x99],
+            ["zeropage", 0x85],
         ])],
         ["stx", new Map([
             ["absolute", 0x8e],
+            ["zeropage", 0x86],
         ])],
         ["sty", new Map([
             ["absolute", 0x8c],
+            ["zeropage", 0x84],
         ])],
         ["tax", new Map([
             ["implicit", 0xaa],
@@ -164,6 +174,7 @@ export default function assemble(program: Program): number[] {
         ["immediate", 1],
         ["implicit", 0],
         ["relative", 1],
+        ["zeropage", 1],
     ])
     for(let command of program) {
         switch(command.type) {
@@ -180,17 +191,27 @@ export default function assemble(program: Program): number[] {
             }
             case "instruction": {
                 let [instruction, operand] = command.body;
+                let mode: AddressingMode = operand.mode;
+                if(branch_instructions.has(instruction)) {
+                    mode = "relative";
+                }
+                if(instruction.length == 4 && instruction[3] == "z") {
+                    switch(mode) {
+                        case "absolute":
+                            mode = "zeropage";
+                            break;
+                        default:
+                            throw Error(`Illegal addressing mode ${mode} for ${instruction}`);
+                    }
+                    instruction = instruction.slice(0, 3);
+                }
                 let modes = instructions.get(instruction);
                 if(modes === undefined) {
                     throw new Error(`Unknown opcode ${instruction}`);
                 }
-                let opcode = modes.get(operand.mode);
+                let opcode = modes.get(mode);
                 if(opcode === undefined) {
-                    throw new Error(`Illegal addressing mode ${operand.mode} for ${instruction}`);
-                }
-                let mode: AddressingMode = operand.mode;
-                if(branch_instructions.has(instruction)) {
-                    mode = "relative";
+                    throw new Error(`Illegal addressing mode ${mode} for ${instruction}`);
                 }
                 ret[org] = opcode;
                 org = (org + 1) & 0xffff;

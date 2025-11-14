@@ -95,11 +95,17 @@ export default class Machine {
             [0x0e, ["asl", "absolute"]],
             [0x10, ["bpl", "relative"]],
             [0x18, ["clc", "implicit"]],
+            [0x26, ["rol", "zeropage"]],
             [0x2a, ["rol.a", "implicit"]],
             [0x2e, ["rol", "absolute"]],
             [0x38, ["sec", "implicit"]],
+            [0x65, ["adc", "zeropage"]],
             [0x69, ["adc", "immediate"]],
             [0x6d, ["adc", "absolute"]],
+            [0x7d, ["adc", "absolute,x fast"]],
+            [0x84, ["sty", "zeropage"]],
+            [0x85, ["sta", "zeropage"]],
+            [0x86, ["stx", "zeropage"]],
             [0x88, ["dey", "implicit"]],
             [0x8a, ["txa", "implicit"]],
             [0x8c, ["sty", "absolute"]],
@@ -111,6 +117,9 @@ export default class Machine {
             [0x9d, ["sta", "absolute,x"]],
             [0xa0, ["ldy", "immediate"]],
             [0xa2, ["ldx", "immediate"]],
+            [0xa4, ["ldy", "zeropage"]],
+            [0xa5, ["lda", "zeropage"]],
+            [0xa6, ["ldx", "zeropage"]],
             [0xa8, ["tay", "implicit"]],
             [0xa9, ["lda", "immediate"]],
             [0xaa, ["tax", "implicit"]],
@@ -123,6 +132,7 @@ export default class Machine {
             [0xc8, ["iny", "implicit"]],
             [0xca, ["dex", "implicit"]],
             [0xd0, ["bne", "relative"]],
+            [0xe5, ["sbc", "zeropage"]],
             [0xe8, ["inx", "implicit"]],
             [0xed, ["sbc", "absolute"]],
         ]);
@@ -181,6 +191,9 @@ export default class Machine {
                     offset -= 256;
                 }
                 effective_address = (this.pc + offset) & 0xffff;
+                break;
+            case "zeropage":
+                effective_address = this.read_instruction();
                 break;
             default:
                 throw new Error(`Unknown addressing mode ${mode}`);
