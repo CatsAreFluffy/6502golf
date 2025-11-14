@@ -74,10 +74,14 @@ export default function assemble(program: Program): number[] {
             ["immediate", 0x69],
         ])],
         ["asl", new Map([
+            ["absolute", 0x0e],
             ["implicit", 0x0a],
         ])],
         ["bcc", new Map([
             ["absolute", 0x90],
+        ])],
+        ["bcs", new Map([
+            ["absolute", 0xb0],
         ])],
         ["bne", new Map([
             ["absolute", 0xd0],
@@ -85,11 +89,17 @@ export default function assemble(program: Program): number[] {
         ["bpl", new Map([
             ["absolute", 0x10],
         ])],
+        ["brk", new Map([
+            ["implicit", 0x00],
+        ])],
         ["clc", new Map([
             ["implicit", 0x18],
         ])],
         ["dex", new Map([
             ["implicit", 0xca],
+        ])],
+        ["dey", new Map([
+            ["implicit", 0x88],
         ])],
         ["inx", new Map([
             ["implicit", 0xe8],
@@ -100,13 +110,24 @@ export default function assemble(program: Program): number[] {
         ["lda", new Map([
             ["absolute", 0xad],
             ["immediate", 0xa9],
+            ["absolute,x", 0xbd],
         ])],
         ["ldx", new Map([
             ["immediate", 0xa2],
+            ["absolute", 0xae],
+            ["absolute,y", 0xbe],
+        ])],
+        ["ldy", new Map([
+            ["immediate", 0xa0],
+            ["absolute", 0xac],
         ])],
         ["rol", new Map([
             ["implicit", 0x2a],
             ["absolute", 0x2e],
+            ["absolute,x", 0x3e],
+        ])],
+        ["sbc", new Map([
+            ["absolute", 0xed],
         ])],
         ["sec", new Map([
             ["implicit", 0x38],
@@ -114,9 +135,16 @@ export default function assemble(program: Program): number[] {
         ["sta", new Map([
             ["absolute", 0x8d],
             ["absolute,x", 0x9d],
+            ["absolute,y", 0x99],
         ])],
         ["stx", new Map([
             ["absolute", 0x8e],
+        ])],
+        ["sty", new Map([
+            ["absolute", 0x8c],
+        ])],
+        ["tax", new Map([
+            ["implicit", 0xaa],
         ])],
         ["tay", new Map([
             ["implicit", 0xa8],
@@ -128,10 +156,11 @@ export default function assemble(program: Program): number[] {
             ["implicit", 0x98],
         ])],
     ]);
-    const branch_instructions = new Set(["bcc", "bne", "bpl"]);
+    const branch_instructions = new Set(["bcc", "bcs", "bne", "bpl"]);
     const operand_lengths = new Map([
         ["absolute", 2],
         ["absolute,x", 2],
+        ["absolute,y", 2],
         ["immediate", 1],
         ["implicit", 0],
         ["relative", 1],
@@ -152,11 +181,11 @@ export default function assemble(program: Program): number[] {
             case "instruction": {
                 let [instruction, operand] = command.body;
                 let modes = instructions.get(instruction);
-                if(!modes) {
+                if(modes === undefined) {
                     throw new Error(`Unknown opcode ${instruction}`);
                 }
                 let opcode = modes.get(operand.mode);
-                if(!opcode) {
+                if(opcode === undefined) {
                     throw new Error(`Illegal addressing mode ${operand.mode} for ${instruction}`);
                 }
                 let mode: AddressingMode = operand.mode;

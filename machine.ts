@@ -92,6 +92,7 @@ export default class Machine {
         let instruction_start = this.pc;
         const opcodes = new Map([
             [0x0a, ["asl.a", "implicit"]],
+            [0x0e, ["asl", "absolute"]],
             [0x10, ["bpl", "relative"]],
             [0x18, ["clc", "implicit"]],
             [0x2a, ["rol.a", "implicit"]],
@@ -99,20 +100,31 @@ export default class Machine {
             [0x38, ["sec", "implicit"]],
             [0x69, ["adc", "immediate"]],
             [0x6d, ["adc", "absolute"]],
+            [0x88, ["dey", "implicit"]],
             [0x8a, ["txa", "implicit"]],
+            [0x8c, ["sty", "absolute"]],
             [0x8d, ["sta", "absolute"]],
             [0x8e, ["stx", "absolute"]],
             [0x90, ["bcc", "relative"]],
             [0x98, ["tya", "implicit"]],
+            [0x99, ["sta", "absolute,y"]],
             [0x9d, ["sta", "absolute,x"]],
+            [0xa0, ["ldy", "immediate"]],
             [0xa2, ["ldx", "immediate"]],
             [0xa8, ["tay", "implicit"]],
             [0xa9, ["lda", "immediate"]],
+            [0xaa, ["tax", "implicit"]],
+            [0xac, ["ldy", "absolute"]],
             [0xad, ["lda", "absolute"]],
+            [0xae, ["ldx", "absolute"]],
+            [0xb0, ["bcs", "relative"]],
+            [0xbd, ["lda", "absolute,x fast"]],
+            [0xbe, ["ldx", "absolute,y fast"]],
             [0xc8, ["iny", "implicit"]],
             [0xca, ["dex", "implicit"]],
             [0xd0, ["bne", "relative"]],
             [0xe8, ["inx", "implicit"]],
+            [0xed, ["sbc", "absolute"]],
         ]);
         let opcode = this.read_instruction();
         let decode = opcodes.get(opcode);
@@ -128,12 +140,30 @@ export default class Machine {
                 effective_address = (high << 8) | low;
                 break;
             }
-            case "absolute,x": {
+            case "absolute,x":
+            case "absolute,x fast": {
                 let low = this.read_instruction();
                 let high = this.read_instruction();
                 let base_address = (high << 8) | low;
                 effective_address = (base_address + this.x) & 0xffff;
-                if((base_address >> 8) != (effective_address >> 8)) {
+                if(
+                    mode == "absolute,x" ||
+                    (base_address >> 8) != (effective_address >> 8)
+                ) {
+                    this.read((effective_address - 256) & 0xffff);
+                }
+                break;
+            }
+            case "absolute,y":
+            case "absolute,y fast": {
+                let low = this.read_instruction();
+                let high = this.read_instruction();
+                let base_address = (high << 8) | low;
+                effective_address = (base_address + this.y) & 0xffff;
+                if(
+                    mode == "absolute,y" ||
+                    (base_address >> 8) != (effective_address >> 8)
+                ) {
                     this.read((effective_address - 256) & 0xffff);
                 }
                 break;
@@ -162,29 +192,47 @@ export default class Machine {
         }
         let is_jump = false;
         switch(instruction) {
-            case "adc": {
+            case "adc":
+            case "sbc": {
                 let value = this.read(effective_address);
-                let result = this.a + value + +this.c;
+                let value2 = instruction == "sbc" ? value ^ 0xff : value;
+                let result = this.a + value2 + +this.c;
                 this.v = ((this.a & 0x80) == (value & 0x80)) && ((this.a & 0x80) != (result & 0x80));
                 this.a = result & 0xff;
                 this.set_nz(this.a);
                 this.c = result >= 256;
                 break;
             }
-            case "asl.a": {
-                let shifted = this.a << 1;
+            case "asl.a":
+            case "rol.a": {
+                let cin = this.c && instruction == "rol.a";
+                let shifted = this.a << 1 | +cin;
                 this.a = shifted & 0xff;
                 this.set_nz(this.a);
                 this.c = (shifted >> 8) > 0;
                 break;
             }
+            case "asl":
+            case "rol": {
+                let value = this.read(effective_address);
+                this.write(effective_address, value);
+                let cin = this.c && instruction == "rol";
+                let shifted = value << 1 | +cin;
+                let result = shifted & 0xff;
+                this.write(effective_address, result);
+                this.set_nz(result);
+                this.c = (shifted >> 8) > 0;
+                break;
+            }
             case "bcc":
+            case "bcs":
             case "bne":
             case "bpl": {
                 is_jump = true;
                 this.last_instruction = new MemoryRange(instruction_start, this.pc);
                 let conditions = {
                     bcc: !this.c,
+                    bcs: this.c,
                     bne: !this.z,
                     bpl: !this.n,
                 };
@@ -207,6 +255,11 @@ export default class Machine {
                 this.set_nz(this.x);
                 break;
             }
+            case "dey": {
+                this.y = (this.y - 1) & 0xff;
+                this.set_nz(this.y);
+                break;
+            }
             case "inx": {
                 this.x = (this.x + 1) & 0xff;
                 this.set_nz(this.x);
@@ -225,28 +278,22 @@ export default class Machine {
                 this.x = this.read(effective_address);
                 this.set_nz(this.x);
                 break;
-            case "rol.a": {
-                let shifted = this.a << 1 | +this.c;
-                this.a = shifted & 0xff;
-                this.set_nz(this.a);
-                this.c = (shifted >> 8) > 0;
+            case "ldy":
+                this.y = this.read(effective_address);
+                this.set_nz(this.y);
                 break;
-            }
-            case "rol": {
-                let value = this.read(effective_address);
-                this.write(effective_address, value);
-                let shifted = value << 1 | +this.c;
-                let result = shifted & 0xff;
-                this.write(effective_address, result);
-                this.set_nz(result);
-                this.c = (shifted >> 8) > 0;
-                break;
-            }
             case "sta":
                 this.write(effective_address, this.a);
                 break;
             case "stx":
                 this.write(effective_address, this.x);
+                break;
+            case "sty":
+                this.write(effective_address, this.y);
+                break;
+            case "tax":
+                this.x = this.a;
+                this.set_nz(this.x);
                 break;
             case "tay":
                 this.y = this.a;

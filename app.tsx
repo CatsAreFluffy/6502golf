@@ -7,66 +7,21 @@ import Machine from "./machine";
 import MachineView from "./machine_view";
 
 const default_code = `
- org 0
-tmp0 byte 0
- org $0400
-mul10l
- org $0500
-mul10h
- org $1000
-array
- org $0200
-fill
- sta mul10l,x
- sta tmp0
- tya
- sta mul10h,x
- lda #1
- sta array,x
- lda tmp0
- adc #10
- bcc nocarry
- iny
- clc
-nocarry
- inx
- bne fill
- org $0300
-fill2
- sta mul10l,x
- sta mul10l+128,x
- sta tmp0
- tya
- sta mul10h,x
- adc #5
- sta mul10h+128,x
- lda #1
- sta array,x
- sta array+128,x
- lda tmp0
- adc #10
- bcc nocarry2
- iny
- clc
-nocarry2
- inx
- bpl fill2
- org $fffc
- word $0200
 `.replace(/^\n|\n$/g,"");
 
 function assemble_source(src: string): Machine | undefined {
-        console.log("src:", src);
-        let tokens = lex(src)
-        console.log("lex:", tokens);
-        try {
-            let parse_tree = parse(tokens);
-            console.log("parse:", parse_tree);
-            let code = assemble(parse_tree);
-            return new Machine(code);
-        } catch(e) {
-            console.error(e);
-        }
+    console.log("src:", src);
+    let tokens = lex(src)
+    console.log("lex:", tokens);
+    try {
+        let parse_tree = parse(tokens);
+        console.log("parse:", parse_tree);
+        let code = assemble(parse_tree);
+        let machine = new Machine(code);
+        return machine;
+    } catch(e) {
+        console.error(e);
+    }
 }
 
 function App() {
@@ -109,7 +64,11 @@ function App() {
         }
         let millis = Date.now() - now;
         if(i > 0) {
-            console.log("One step takes", (millis*1e6/i).toPrecision(2), "ns");
+            console.log("One step takes", (millis*1e6/i).toFixed(2), "ns");
+            console.log("One cycle takes", (millis*1e6/(new_machine.cycles - machine.cycles)).toFixed(2), "ns");
+        }
+        if(!new_machine.memory[new_machine.pc]) {
+            new_machine.pc = (new_machine.pc + 1) & 0xffff;
         }
         setMachine(new_machine);
     }
