@@ -138,6 +138,39 @@ export default class Machine {
             case "implicit":
                 this.read(this.pc);
                 break;
+            case "indirect": {
+                let base_low = this.read_instruction();
+                let base_high = this.read_instruction();
+                let pointer_address = (base_high << 8) | base_low;
+                let low = this.read(pointer_address);
+                let high = this.read((pointer_address + 1) & 0xffff);
+                effective_address = (high << 8) | low;
+                break;
+            }
+            case "indirect,x": {
+                let base = this.read_instruction();
+                this.read(base);
+                let pointer_address = (base + this.x) & 0xff;
+                let low = this.read(pointer_address);
+                let high = this.read((pointer_address + 1) & 0xff);
+                effective_address = (high << 8) | low;
+                break;
+            }
+            case "indirect,y":
+            case "indirect,y fast": {
+                let pointer_address = this.read_instruction();
+                let low = this.read(pointer_address);
+                let high = this.read((pointer_address + 1) & 0xff);
+                let base_address = (high << 8) | low;
+                effective_address = (base_address + this.y) & 0xffff;
+                if(
+                    mode == "indirect,y" ||
+                    (base_address >> 8) != (effective_address >> 8)
+                ) {
+                    this.read((effective_address - 256) & 0xffff);
+                }
+                break;
+            }
             case "relative": {
                 let offset = this.read_instruction();
                 if(offset >= 128) {
