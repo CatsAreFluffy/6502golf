@@ -113,3 +113,4 @@ for(let i = 0; i < 256; i++) {
     }
     slot.set(assemble_mode, i);
 }
+encodings.get("sbc")!.set("immediate", 0xe9);
