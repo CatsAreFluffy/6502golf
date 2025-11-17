@@ -278,6 +278,26 @@ export default class Machine {
             case "clv":
                 this.v = false;
                 break;
+            case "cmp":
+            case "cpx":
+            case "cpy": {
+                let base;
+                switch(instruction) {
+                    case "cmp":
+                        base = this.a;
+                        break;
+                    case "cpx":
+                        base = this.x;
+                        break;
+                    case "cpy":
+                        base = this.y;
+                        break;
+                }
+                let result = base - this.read(effective_address);
+                this.set_nz(result & 0xff);
+                this.c = (result & 0x100) == 0;
+                break;
+            }
             case "dex":
                 this.x = (this.x - 1) & 0xff;
                 this.set_nz(this.x);
