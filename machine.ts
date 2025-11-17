@@ -226,15 +226,23 @@ export default class Machine {
             }
             case "bcc":
             case "bcs":
+            case "beq":
+            case "bmi":
             case "bne":
-            case "bpl": {
+            case "bpl":
+            case "bvc":
+            case "bvs": {
                 is_jump = true;
                 this.last_instruction = new MemoryRange(instruction_start, this.pc);
                 let conditions = {
                     bcc: !this.c,
                     bcs: this.c,
+                    beq: this.z,
+                    bmi: this.n,
                     bne: !this.z,
                     bpl: !this.n,
+                    bvs: this.v,
+                    bvc: !this.v,
                 };
                 if(conditions[instruction]) {
                     this.read_instruction();
@@ -248,6 +256,16 @@ export default class Machine {
             case "clc":
             case "sec":
                 this.c = instruction == "sec";
+                break;
+            case "cld":
+                this.d = false;
+                break;
+            case "cli":
+            case "sei":
+                this.i = instruction == "sei";
+                break;
+            case "clv":
+                this.v = false;
                 break;
             case "dex":
                 this.x = (this.x - 1) & 0xff;
