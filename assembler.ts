@@ -1,4 +1,5 @@
-import { Operand, Command, Program, Expr, AddressingMode as ParseAddressingMode } from "./parser";
+import { Operand, Command, Program, Expr } from "./parser";
+import { AssembleInstruction, ParseAddressingMode, AssembleAddressingMode, encodings } from "./instructions";
 
 type Relocation = {
     address: number,
@@ -60,7 +61,6 @@ function eval_expr(expr: Expr, labels: Map<string, number>): number {
     }
 }
 
-type AddressingMode = ParseAddressingMode | "relative" | "zeropage";
 export default function assemble(program: Program): number[] {
     let ret = new Array(65536).fill(0);
     let relocations: Relocation[] = [];
@@ -68,104 +68,6 @@ export default function assemble(program: Program): number[] {
     // reset=0x200
     ret[0xfffd] = 2;
     let org = 0x200;
-    const instructions = new Map([
-        ["adc", new Map([
-            ["absolute", 0x6d],
-            ["absolute,x", 0x7d],
-            ["immediate", 0x69],
-            ["zeropage", 0x65],
-        ])],
-        ["asl", new Map([
-            ["absolute", 0x0e],
-            ["implicit", 0x0a],
-        ])],
-        ["bcc", new Map([
-            ["relative", 0x90],
-        ])],
-        ["bcs", new Map([
-            ["relative", 0xb0],
-        ])],
-        ["bne", new Map([
-            ["relative", 0xd0],
-        ])],
-        ["bpl", new Map([
-            ["relative", 0x10],
-        ])],
-        ["brk", new Map([
-            ["implicit", 0x00],
-        ])],
-        ["clc", new Map([
-            ["implicit", 0x18],
-        ])],
-        ["dex", new Map([
-            ["implicit", 0xca],
-        ])],
-        ["dey", new Map([
-            ["implicit", 0x88],
-        ])],
-        ["inx", new Map([
-            ["implicit", 0xe8],
-        ])],
-        ["iny", new Map([
-            ["implicit", 0xc8],
-        ])],
-        ["lda", new Map([
-            ["absolute", 0xad],
-            ["immediate", 0xa9],
-            ["absolute,x", 0xbd],
-            ["zeropage", 0xa5],
-        ])],
-        ["ldx", new Map([
-            ["immediate", 0xa2],
-            ["absolute", 0xae],
-            ["absolute,y", 0xbe],
-            ["zeropage", 0xa6],
-        ])],
-        ["ldy", new Map([
-            ["immediate", 0xa0],
-            ["absolute", 0xac],
-            ["zeropage", 0xa4],
-        ])],
-        ["rol", new Map([
-            ["implicit", 0x2a],
-            ["absolute", 0x2e],
-            ["absolute,x", 0x3e],
-            ["zeropage", 0x26],
-        ])],
-        ["sbc", new Map([
-            ["absolute", 0xed],
-            ["zeropage", 0xe5],
-        ])],
-        ["sec", new Map([
-            ["implicit", 0x38],
-        ])],
-        ["sta", new Map([
-            ["absolute", 0x8d],
-            ["absolute,x", 0x9d],
-            ["absolute,y", 0x99],
-            ["zeropage", 0x85],
-        ])],
-        ["stx", new Map([
-            ["absolute", 0x8e],
-            ["zeropage", 0x86],
-        ])],
-        ["sty", new Map([
-            ["absolute", 0x8c],
-            ["zeropage", 0x84],
-        ])],
-        ["tax", new Map([
-            ["implicit", 0xaa],
-        ])],
-        ["tay", new Map([
-            ["implicit", 0xa8],
-        ])],
-        ["txa", new Map([
-            ["implicit", 0x8a],
-        ])],
-        ["tya", new Map([
-            ["implicit", 0x98],
-        ])],
-    ]);
     const branch_instructions = new Set(["bcc", "bcs", "bne", "bpl"]);
     const operand_lengths = new Map([
         ["absolute", 2],
@@ -191,7 +93,7 @@ export default function assemble(program: Program): number[] {
             }
             case "instruction": {
                 let [instruction, operand] = command.body;
-                let mode: AddressingMode = operand.mode;
+                let mode: AssembleAddressingMode = operand.mode;
                 if(branch_instructions.has(instruction)) {
                     mode = "relative";
                 }
@@ -200,14 +102,20 @@ export default function assemble(program: Program): number[] {
                         case "absolute":
                             mode = "zeropage";
                             break;
+                        case "absolute,x":
+                            mode = "zeropage,x";
+                            break;
+                        case "absolute,y":
+                            mode = "zeropage,y";
+                            break;
                         default:
                             throw Error(`Illegal addressing mode ${mode} for ${instruction}`);
                     }
                     instruction = instruction.slice(0, 3);
                 }
-                let modes = instructions.get(instruction);
+                let modes = encodings.get(instruction as AssembleInstruction);
                 if(modes === undefined) {
-                    throw new Error(`Unknown opcode ${instruction}`);
+                    throw new Error(`Unknown instruction ${instruction}`);
                 }
                 let opcode = modes.get(mode);
                 if(opcode === undefined) {

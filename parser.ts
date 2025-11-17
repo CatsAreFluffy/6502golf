@@ -1,3 +1,5 @@
+import { ParseAddressingMode } from "./instructions";
+
 type Token = {
     token: string,
     kind: "identifier" | "symbol" | "indent" | "newline" | "eof",
@@ -147,13 +149,12 @@ function parse_expr(stream: TokenStream): Expr {
     return head;
 }
 
-type AddressingMode =  "absolute" | "absolute,x" | "absolute,y" | "immediate" | "implicit";
-type Operand = {mode: AddressingMode, body: Expr};
+type Operand = {mode: ParseAddressingMode, body: Expr};
 function parse_operand(stream: TokenStream): Operand {
     if(stream.eof() || stream.peek().kind == "newline") {
         return {mode: "implicit", body: {type: "constant", value: 0}};
     }
-    let mode: AddressingMode = "absolute";
+    let mode: ParseAddressingMode = "absolute";
     if(stream.peek().token == "#") {
         mode = "immediate";
         stream.next();
@@ -277,4 +278,4 @@ function parse(tokens: Token[]): Program {
     return parse_program(new TokenStream(tokens));
 }
 
-export { lex, parse, Expr, AddressingMode, Operand, Command, Program };
+export { lex, parse, Expr, Operand, Command, Program };

@@ -1,3 +1,5 @@
+import { modes, instructions } from "./instructions";
+
 export class MemoryRange {
     start: number;
     end: number;
@@ -90,58 +92,9 @@ export default class Machine {
 
     step() {
         let instruction_start = this.pc;
-        const opcodes = new Map([
-            [0x0a, ["asl.a", "implicit"]],
-            [0x0e, ["asl", "absolute"]],
-            [0x10, ["bpl", "relative"]],
-            [0x18, ["clc", "implicit"]],
-            [0x26, ["rol", "zeropage"]],
-            [0x2a, ["rol.a", "implicit"]],
-            [0x2e, ["rol", "absolute"]],
-            [0x38, ["sec", "implicit"]],
-            [0x65, ["adc", "zeropage"]],
-            [0x69, ["adc", "immediate"]],
-            [0x6d, ["adc", "absolute"]],
-            [0x7d, ["adc", "absolute,x fast"]],
-            [0x84, ["sty", "zeropage"]],
-            [0x85, ["sta", "zeropage"]],
-            [0x86, ["stx", "zeropage"]],
-            [0x88, ["dey", "implicit"]],
-            [0x8a, ["txa", "implicit"]],
-            [0x8c, ["sty", "absolute"]],
-            [0x8d, ["sta", "absolute"]],
-            [0x8e, ["stx", "absolute"]],
-            [0x90, ["bcc", "relative"]],
-            [0x98, ["tya", "implicit"]],
-            [0x99, ["sta", "absolute,y"]],
-            [0x9d, ["sta", "absolute,x"]],
-            [0xa0, ["ldy", "immediate"]],
-            [0xa2, ["ldx", "immediate"]],
-            [0xa4, ["ldy", "zeropage"]],
-            [0xa5, ["lda", "zeropage"]],
-            [0xa6, ["ldx", "zeropage"]],
-            [0xa8, ["tay", "implicit"]],
-            [0xa9, ["lda", "immediate"]],
-            [0xaa, ["tax", "implicit"]],
-            [0xac, ["ldy", "absolute"]],
-            [0xad, ["lda", "absolute"]],
-            [0xae, ["ldx", "absolute"]],
-            [0xb0, ["bcs", "relative"]],
-            [0xbd, ["lda", "absolute,x fast"]],
-            [0xbe, ["ldx", "absolute,y fast"]],
-            [0xc8, ["iny", "implicit"]],
-            [0xca, ["dex", "implicit"]],
-            [0xd0, ["bne", "relative"]],
-            [0xe5, ["sbc", "zeropage"]],
-            [0xe8, ["inx", "implicit"]],
-            [0xed, ["sbc", "absolute"]],
-        ]);
         let opcode = this.read_instruction();
-        let decode = opcodes.get(opcode);
-        if(!decode) {
-            throw new Error(`Unknown opcode ${opcode.toString(16).padStart(2, "0")}`);
-        }
-        let [instruction, mode] = decode;
+        let instruction = instructions[opcode];
+        let mode = modes[opcode];
         let effective_address = 0;
         switch(mode) {
             case "absolute": {
@@ -216,9 +169,9 @@ export default class Machine {
                 this.c = result >= 256;
                 break;
             }
-            case "asl.a":
-            case "rol.a": {
-                let cin = this.c && instruction == "rol.a";
+            case "asla":
+            case "rola": {
+                let cin = this.c && instruction == "rola";
                 let shifted = this.a << 1 | +cin;
                 this.a = shifted & 0xff;
                 this.set_nz(this.a);
