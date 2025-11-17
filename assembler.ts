@@ -72,7 +72,7 @@ export default function assemble(program: Program): number[] {
     // reset=0x200
     ret[0xfffd] = 2;
     let org = 0x200;
-    const branch_instructions = new Set(["bcc", "bcs", "bne", "bpl"]);
+    const branch_instructions = new Set(["bcc", "bcs", "beq", "bmi", "bne", "bpl", "bvc", "bvs"]);
     const operand_lengths = new Map([
         ["absolute", 2],
         ["absolute,x", 2],
