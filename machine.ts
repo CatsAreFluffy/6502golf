@@ -498,9 +498,16 @@ export default class Machine {
                 this.y = this.a;
                 this.set_nz(this.y);
                 break;
+            case "tsx":
+                this.x = this.s;
+                this.set_nz(this.x);
+                break;
             case "txa":
                 this.a = this.x;
                 this.set_nz(this.a);
+                break;
+            case "txs":
+                this.s = this.x;
                 break;
             case "tya":
                 this.a = this.y;
