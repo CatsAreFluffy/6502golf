@@ -200,11 +200,42 @@ export default class Machine {
             case "sbc": {
                 let value = this.read(effective_address);
                 let value2 = instruction == "sbc" ? value ^ 0xff : value;
-                let result = this.a + value2 + +this.c;
-                this.v = ((this.a & 0x80) == (value & 0x80)) && ((this.a & 0x80) != (result & 0x80));
-                this.a = result & 0xff;
-                this.set_nz(this.a);
-                this.c = result >= 256;
+                let dec_result = this.a + value2 + +this.c;
+                if(this.d) {
+                    if(instruction == "adc") {
+                        this.z = (dec_result & 0xff) == 0;
+                        let result_low = (this.a & 0x0f) + (value & 0x0f) + +this.c;
+                        if(result_low >= 10) {
+                            result_low = ((result_low & 0x0f) + 6) | 0x10;
+                        }
+                        let result = (this.a & 0xf0) + (value & 0xf0) + result_low;
+                        this.n = (result & 0x80) != 0;
+                        this.v = ((this.a & 0x80) == (value & 0x80)) && ((this.a & 0x80) != (result & 0x80));
+                        if(result >= (10 << 4)) {
+                            result += 6 << 4;
+                        }
+                        this.a = result & 0xff;
+                        this.c = result >= 256;
+                    } else {
+                        this.v = ((this.a & 0x80) == (value2 & 0x80)) && ((this.a & 0x80) != (dec_result & 0x80));
+                        this.set_nz(dec_result & 0xff);
+                        let result_low = (this.a & 0x0f) - (value & 0x0f) + +this.c - 1;
+                        if(result_low < 0) {
+                            result_low = (result_low - 0x06) | ~0x0f;
+                        }
+                        let result = (this.a & 0xf0) - (value & 0xf0) + result_low;
+                        if(result < 0) {
+                            result -= 6 << 4;
+                        }
+                        this.a = result & 0xff;
+                        this.c = dec_result >= 256;
+                    }
+                } else {
+                    this.v = ((this.a & 0x80) == (value2 & 0x80)) && ((this.a & 0x80) != (dec_result & 0x80));
+                    this.a = dec_result & 0xff;
+                    this.set_nz(this.a);
+                    this.c = dec_result >= 256;
+                }
                 break;
             }
             case "asla":
@@ -269,7 +300,8 @@ export default class Machine {
                 this.c = instruction == "sec";
                 break;
             case "cld":
-                this.d = false;
+            case "sed":
+                this.d = instruction == "sed";
                 break;
             case "cli":
             case "sei":
