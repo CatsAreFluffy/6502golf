@@ -300,7 +300,7 @@ export default class Machine {
                 this.s = (this.s - 1) & 0xff;
                 this.write(0x100 + this.s, this.pc & 0xff);
                 this.s = (this.s - 1) & 0xff;
-                let flags = 0x10;
+                let flags = 0x30;
                 flags |= +this.c;
                 flags |= +this.z << 1;
                 flags |= +this.i << 2;
@@ -401,7 +401,7 @@ export default class Machine {
                 this.s = (this.s - 1) & 0xff;
                 break;
             case "php": {
-                let flags = 0x10;
+                let flags = 0x30;
                 flags |= +this.c;
                 flags |= +this.z << 1;
                 flags |= +this.i << 2;

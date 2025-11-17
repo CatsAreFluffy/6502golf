@@ -9,8 +9,8 @@ function hex(value: number, length: number = 2): String {
 }
 
 export default function MachineView({ machine: m }: {machine: Machine}) {
-    const flags = [m.n, m.v, false, true, m.d, m.i, m.z, m.c];
-    const names = "nv01dizc";
+    const flags = [m.n, m.v, true, true, m.d, m.i, m.z, m.c];
+    const names = "nv1bdizc";
     let names2 = "";
     for(let i = 0; i < 8; i++) {
         if(flags[i]) {
