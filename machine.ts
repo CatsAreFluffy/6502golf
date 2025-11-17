@@ -35,7 +35,7 @@ export default class Machine {
     c: boolean = false;
     v: boolean = false;
     d: boolean = false;
-    i: boolean = false;
+    i: boolean = true;
 
     cycles: number = 0;
 
@@ -312,6 +312,7 @@ export default class Machine {
                 let pc_low = this.read(0xfffe);
                 let pc_high = this.read(0xffff);
                 this.pc = (pc_high << 8) | pc_low;
+                this.i = true;
                 break;
             }
             case "clc":
