@@ -393,6 +393,25 @@ export default class Machine {
                 this.y = this.read(effective_address);
                 this.set_nz(this.y);
                 break;
+            case "lsr":
+            case "ror": {
+                let value = this.read(effective_address);
+                this.write(effective_address, value);
+                let cin = this.c && instruction == "ror";
+                let result = (+cin << 8 | value) >> 1;
+                this.write(effective_address, result);
+                this.set_nz(result);
+                this.c = (value & 1) > 0;
+                break;
+            }
+            case "lsra":
+            case "rora": {
+                let cin = this.c && instruction == "rora";
+                this.c = (this.a & 1) > 0;
+                this.a = (+cin << 8 | this.a) >> 1;
+                this.set_nz(this.a);
+                break;
+            }
             case "nop":
                 this.read(effective_address);
                 break;
