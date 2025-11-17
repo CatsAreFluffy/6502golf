@@ -55,24 +55,6 @@ const assemble_modes: Map<AddressingMode, AssembleAddressingMode> = new Map([
     ["indirect,x", "indirect,x"],
     ["indirect,y", "indirect,y"],
     ["indirect,y fast", "indirect,y"],
-])
-
-const parse_modes: Map<AddressingMode, ParseAddressingMode> = new Map([
-    ["implicit", "implicit"],
-    ["immediate", "immediate"],
-    ["zeropage", "absolute"],
-    ["zeropage,x", "absolute,x"],
-    ["zeropage,y", "absolute,y"],
-    ["relative", "absolute"],
-    ["absolute", "absolute"],
-    ["absolute,x", "absolute,x"],
-    ["absolute,x fast", "absolute,x"],
-    ["absolute,y", "absolute,y"],
-    ["absolute,y fast", "absolute,y"],
-    ["indirect", "indirect"],
-    ["indirect,x", "indirect,x"],
-    ["indirect,y", "indirect,y"],
-    ["indirect,y fast", "indirect,y"],
 ]);
 
 export type AssembleInstruction = "brk" | "ora" | "jam" | "slo" | "nop" | "asl" | "php" | "anc" | "bpl" | "clc" | "jsr" | "and" | "rla" | "bit" | "rol" | "plp" | "bmi" | "sec" | "rti" | "eor" | "sre" | "lse" | "pha" | "alr" | "jmp" | "lsr" | "bvc" | "cli" | "rts" | "adc" | "rra" | "ror" | "pla" | "arr" | "bvs" | "sei" | "sta" | "sax" | "sty" | "stx" | "dey" | "txa" | "ane" | "bcc" | "sha" | "tya" | "txs" | "tas" | "shy" | "shx" | "ldy" | "lda" | "ldx" | "lax" | "tay" | "tax" | "lxa" | "bcs" | "clv" | "tsx" | "las" | "cpy" | "cmp" | "dcp" | "dec" | "iny" | "dex" | "sbx" | "bne" | "cld" | "cpx" | "sbc" | "isc" | "inc" | "inx" | "beq" | "sed";
@@ -104,7 +86,6 @@ for(let i = 0; i < 256; i++) {
     let instruction = instructions[i];
     let assemble_instruction = instruction.slice(0,3) as AssembleInstruction;
     let mode = modes[i];
-    // let parse_mode: ParseAddressingMode = parse_modes.get(mode)!;
     let assemble_mode: AssembleAddressingMode = assemble_modes.get(mode)!;
     let slot = encodings.get(assemble_instruction);
     if(slot === undefined) {
