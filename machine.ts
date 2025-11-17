@@ -350,6 +350,14 @@ export default class Machine {
                 this.c = (result & 0x100) == 0;
                 break;
             }
+            case "dec": {
+                let value = this.read(effective_address);
+                this.write(effective_address, value);
+                let result = (value - 1) & 0xff;
+                this.write(effective_address, result);
+                this.set_nz(result);
+                break;
+            }
             case "dex":
                 this.x = (this.x - 1) & 0xff;
                 this.set_nz(this.x);
@@ -362,6 +370,14 @@ export default class Machine {
                 this.a ^= this.read(effective_address);
                 this.set_nz(this.a);
                 break;
+            case "inc": {
+                let value = this.read(effective_address);
+                this.write(effective_address, value);
+                let result = (value + 1) & 0xff;
+                this.write(effective_address, result);
+                this.set_nz(result);
+                break;
+            }
             case "inx":
                 this.x = (this.x + 1) & 0xff;
                 this.set_nz(this.x);
