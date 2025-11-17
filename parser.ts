@@ -155,26 +155,61 @@ function parse_operand(stream: TokenStream): Operand {
         return {mode: "implicit", body: {type: "constant", value: 0}};
     }
     let mode: ParseAddressingMode = "absolute";
-    if(stream.peek().token == "#") {
+    let indirect = false;
+    let first = stream.peek();
+    if(first.token == "#") {
         mode = "immediate";
+        stream.next();
+    } else if(first.token == "(") {
+        mode = "indirect";
         stream.next();
     }
     let body = parse_expr(stream);
     if(!stream.eof() && stream.peek().token == ",") {
         let comma = stream.next();
-        if(mode != "absolute") {
+        if(mode == "absolute") {
+            let index = stream.next();
+            switch(index.token) {
+                case "x":
+                    mode = "absolute,x";
+                    break;
+                case "y":
+                    mode = "absolute,y";
+                    break;
+                default:
+                    throw new ParseError("Unexpected token after ,", index);
+            }
+        } else if(mode == "indirect") {
+            let index = stream.next();
+            switch(index.token) {
+                case "x":
+                    mode = "indirect,x";
+                    break;
+                case "y":
+                    throw new ParseError("Indexed-indirect addressing can only use the x register", index);
+                default:
+                    throw new ParseError("Unexpected token after ,", index);
+            }
+        } else {
             throw new ParseError("Unexpected , after operand", comma);
         }
-        let index = stream.next();
-        switch(index.token) {
-            case "x":
-                mode = "absolute,x";
-                break;
-            case "y":
-                mode = "absolute,y";
-                break;
-            default:
-                throw new ParseError("Unexpected token after ,", index);
+    }
+    if(mode == "indirect" || mode == "indirect,x") {
+        if(stream.eof() || stream.peek().token != ")") {
+            throw new ParseError("Unclosed parenthesis", first);
+        }
+        stream.next();
+        if(mode == "indirect" && !stream.eof() && stream.next().token == ",") {
+            let index = stream.next();
+            switch(index.token) {
+                case "x":
+                    throw new ParseError("Indirect-indexed addressing can only use the y register", index);
+                case "y":
+                    mode = "indirect,y";
+                    break;
+                default:
+                    throw new ParseError("Unexpected token after ,", index);
+            }
         }
     }
     return {mode, body};
