@@ -75,7 +75,7 @@ const parse_modes: Map<AddressingMode, ParseAddressingMode> = new Map([
     ["indirect,y fast", "indirect,y"],
 ]);
 
-export type AssembleInstruction = "brk" | "ora" | "jam" | "slo" | "nop" | "asl" | "php" | "anc" | "bpl" | "clc" | "jsr" | "and" | "rla" | "bit" | "rol" | "plp" | "bmi" | "sec" | "rti" | "eor" | "sre" | "lse" | "pha" | "alr" | "jmp" | "lsr" | "bvc" | "cli" | "rts" | "adc" | "rra" | "ror" | "pla" | "arr" | "bvs" | "sei" | "sta" | "sax" | "sty" | "stx" | "dey" | "txa" | "ane" | "bcc" | "sha" | "tya" | "txs" | "tas" | "shy" | "shx" | "ldy" | "lda" | "ldx" | "lax" | "tay" | "tax" | "lxa" | "bcs" | "clv" | "tsx" | "las" | "dpy" | "cpy" | "cmp" | "dcp" | "dec" | "iny" | "dex" | "sbx" | "bne" | "cld" | "cpx" | "sbc" | "isc" | "inc" | "inx" | "beq" | "sed";
+export type AssembleInstruction = "brk" | "ora" | "jam" | "slo" | "nop" | "asl" | "php" | "anc" | "bpl" | "clc" | "jsr" | "and" | "rla" | "bit" | "rol" | "plp" | "bmi" | "sec" | "rti" | "eor" | "sre" | "lse" | "pha" | "alr" | "jmp" | "lsr" | "bvc" | "cli" | "rts" | "adc" | "rra" | "ror" | "pla" | "arr" | "bvs" | "sei" | "sta" | "sax" | "sty" | "stx" | "dey" | "txa" | "ane" | "bcc" | "sha" | "tya" | "txs" | "tas" | "shy" | "shx" | "ldy" | "lda" | "ldx" | "lax" | "tay" | "tax" | "lxa" | "bcs" | "clv" | "tsx" | "las" | "cpy" | "cmp" | "dcp" | "dec" | "iny" | "dex" | "sbx" | "bne" | "cld" | "cpx" | "sbc" | "isc" | "inc" | "inx" | "beq" | "sed";
 export type Instruction = AssembleInstruction | "asla" | "nopa" | "rola" | "lsra" | "rora";
 export const instructions: Instruction[] = [
     "brk", "ora", "jam", "slo",  "nop", "ora", "asl", "slo",  "php", "ora", "asla","anc",  "nop", "ora", "asl", "slo",
