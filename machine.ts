@@ -470,6 +470,7 @@ export default class Machine {
                 let pc_high = this.read(0x100 + this.s);
                 this.s = (this.s + 1) & 0xff;
                 this.pc = (pc_high << 8) | pc_low;
+                break;
             }
             case "rts": {
                 this.read(0x100 + this.s);
@@ -480,6 +481,7 @@ export default class Machine {
                 this.s = (this.s + 1) & 0xff;
                 this.pc = (pc_high << 8) | pc_low;
                 this.read_instruction();
+                break;
             }
             case "sta":
                 this.write(effective_address, this.a);
