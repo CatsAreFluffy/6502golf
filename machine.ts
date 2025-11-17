@@ -192,6 +192,10 @@ export default class Machine {
         }
         let is_jump = false;
         switch(instruction) {
+            case "and":
+                this.a &= this.read(effective_address);
+                this.set_nz(this.a);
+                break;
             case "adc":
             case "sbc": {
                 let value = this.read(effective_address);
@@ -253,6 +257,13 @@ export default class Machine {
                 }
                 break;
             }
+            case "bit": {
+                let value = this.read(effective_address);
+                this.n = value >= 128;
+                this.v = ((value >> 6) & 1) == 1;
+                this.z = (this.a & value) == 0;
+                break;
+            }
             case "clc":
             case "sec":
                 this.c = instruction == "sec";
@@ -275,6 +286,10 @@ export default class Machine {
                 this.y = (this.y - 1) & 0xff;
                 this.set_nz(this.y);
                 break;
+            case "eor":
+                this.a ^= this.read(effective_address);
+                this.set_nz(this.a);
+                break;
             case "inx":
                 this.x = (this.x + 1) & 0xff;
                 this.set_nz(this.x);
@@ -294,6 +309,10 @@ export default class Machine {
             case "ldy":
                 this.y = this.read(effective_address);
                 this.set_nz(this.y);
+                break;
+            case "ora":
+                this.a |= this.read(effective_address);
+                this.set_nz(this.a);
                 break;
             case "sta":
                 this.write(effective_address, this.a);
