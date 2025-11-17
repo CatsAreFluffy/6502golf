@@ -103,7 +103,7 @@ type Expr = {
 function parse_short_expr(stream: TokenStream): Expr {
     let next = stream.next();
     switch(next.kind) {
-        case "identifier":
+        case "identifier": {
             let head: Expr;
             if(next.token[0] == "$") {
                 let value = parseInt(next.token.slice(1), 16);
@@ -120,7 +120,7 @@ function parse_short_expr(stream: TokenStream): Expr {
             } else {
                 return {type: "label", label: next.token};
             }
-            break;
+        }
         case "symbol":
             if(next.token.match(/-|~|<|>/)) {
                 let rest = parse_short_expr(stream);
@@ -134,7 +134,6 @@ function parse_short_expr(stream: TokenStream): Expr {
             } else {
                 throw new ParseError("Invalid operator", next);
             }
-            break;
         default:
             throw new ParseError("Expressions cannot be empty", next);
     }

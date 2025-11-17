@@ -138,13 +138,14 @@ export default class Machine {
             case "implicit":
                 this.read(this.pc);
                 break;
-            case "relative":
+            case "relative": {
                 let offset = this.read_instruction();
                 if(offset >= 128) {
                     offset -= 256;
                 }
                 effective_address = (this.pc + offset) & 0xffff;
                 break;
+            }
             case "zeropage":
                 effective_address = this.read_instruction();
                 break;
@@ -212,30 +213,25 @@ export default class Machine {
                 break;
             }
             case "clc":
-            case "sec": {
+            case "sec":
                 this.c = instruction == "sec";
                 break;
-            }
-            case "dex": {
+            case "dex":
                 this.x = (this.x - 1) & 0xff;
                 this.set_nz(this.x);
                 break;
-            }
-            case "dey": {
+            case "dey":
                 this.y = (this.y - 1) & 0xff;
                 this.set_nz(this.y);
                 break;
-            }
-            case "inx": {
+            case "inx":
                 this.x = (this.x + 1) & 0xff;
                 this.set_nz(this.x);
                 break;
-            }
-            case "iny": {
+            case "iny":
                 this.y = (this.y + 1) & 0xff;
                 this.set_nz(this.y);
                 break;
-            }
             case "lda":
                 this.a = this.read(effective_address);
                 this.set_nz(this.a);

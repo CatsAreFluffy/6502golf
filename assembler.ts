@@ -11,7 +11,7 @@ type Relocation = {
 
 function eval_expr(expr: Expr, labels: Map<string, number>): number {
     switch(expr.type) {
-        case "binop":
+        case "binop": {
             let left = eval_expr(expr.left, labels);
             let right = eval_expr(expr.right, labels);
             switch(expr.operation) {
@@ -19,10 +19,11 @@ function eval_expr(expr: Expr, labels: Map<string, number>): number {
                     return (left + right) | 0;
                 case "-":
                     return (left - right) | 0;
-                case "*":
+                case "*": {
                     let top = (left * (right & 0xffff0000)) | 0;
                     let bottom = (left * (right & 0xffff)) | 0;
                     return (top + bottom) | 0;
+                }
                 case "/":
                     throw new Error("/ is unimplemented");
                 case "%":
@@ -38,7 +39,8 @@ function eval_expr(expr: Expr, labels: Map<string, number>): number {
                 case "^":
                     return left ^ right;
             }
-        case "op":
+        }
+        case "op": {
             let body = eval_expr(expr.body, labels);
             switch(expr.operation) {
                 case "-":
@@ -50,12 +52,14 @@ function eval_expr(expr: Expr, labels: Map<string, number>): number {
                 case ">":
                     return (body >> 8) & 0xff;
             }
-        case "label":
+        }
+        case "label": {
             let value = labels.get(expr.label);
             if(value === undefined) {
                 throw new Error(`Unknown label ${expr.label}`);
             }
             return value;
+        }
         case "constant":
             return expr.value;
     }
@@ -83,7 +87,7 @@ export default function assemble(program: Program): number[] {
     ])
     for(let command of program) {
         switch(command.type) {
-            case "dc": {
+            case "dc":
                 relocations.push({
                     address: org,
                     instruction_address: org,
@@ -93,7 +97,6 @@ export default function assemble(program: Program): number[] {
                 })
                 org = (org + command.length) & 0xffff;
                 break;
-            }
             case "instruction": {
                 let [instruction, operand] = command.body;
                 let mode: AssembleAddressingMode = operand.mode;
