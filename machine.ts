@@ -185,7 +185,7 @@ export default class Machine {
             default:
                 throw new Error(`Unknown addressing mode ${mode}`);
         }
-        if(mode == "immediate" || mode == "implicit" || mode == "relative") {
+        if(mode == "immediate" || mode == "implicit" || mode == "relative" || instruction == "jmp") {
             this.last_data = new MemoryRange(0, 0);
         } else {
             this.last_data = new MemoryRange(effective_address, (effective_address + 1) & 0xffff);
@@ -311,6 +311,8 @@ export default class Machine {
                 this.s = (this.s - 1) & 0xff;
                 let pc_low = this.read(0xfffe);
                 let pc_high = this.read(0xffff);
+                is_jump = true;
+                this.last_instruction = new MemoryRange(instruction_start, this.pc);
                 this.pc = (pc_high << 8) | pc_low;
                 this.i = true;
                 break;
@@ -387,6 +389,8 @@ export default class Machine {
                 this.set_nz(this.y);
                 break;
             case "jmp":
+                is_jump = true;
+                this.last_instruction = new MemoryRange(instruction_start, this.pc);
                 this.pc = effective_address;
                 break;
             case "jsr":
@@ -395,6 +399,8 @@ export default class Machine {
                 this.s = (this.s - 1) & 0xff;
                 this.write(0x100 + this.s, (this.pc - 1) & 0xff);
                 this.s = (this.s - 1) & 0xff;
+                is_jump = true;
+                this.last_instruction = new MemoryRange(instruction_start, this.pc);
                 this.pc = effective_address;
                 break;
             case "lda":
@@ -485,6 +491,8 @@ export default class Machine {
                 this.s = (this.s + 1) & 0xff;
                 let pc_high = this.read(0x100 + this.s);
                 this.s = (this.s + 1) & 0xff;
+                is_jump = true;
+                this.last_instruction = new MemoryRange(instruction_start, this.pc);
                 this.pc = (pc_high << 8) | pc_low;
                 break;
             }
@@ -495,6 +503,8 @@ export default class Machine {
                 this.s = (this.s + 1) & 0xff;
                 let pc_high = this.read(0x100 + this.s);
                 this.s = (this.s + 1) & 0xff;
+                is_jump = true;
+                this.last_instruction = new MemoryRange(instruction_start, this.pc);
                 this.pc = (pc_high << 8) | pc_low;
                 this.read_instruction();
                 break;
