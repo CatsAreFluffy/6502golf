@@ -334,6 +334,39 @@ export default class Machine {
                 this.a |= this.read(effective_address);
                 this.set_nz(this.a);
                 break;
+            case "pha":
+                this.write(0x100 + this.s, this.a);
+                this.s = (this.s - 1) & 0xff;
+                break;
+            case "php": {
+                let flags = 0x10;
+                flags |= +this.c;
+                flags |= +this.z << 1;
+                flags |= +this.i << 2;
+                flags |= +this.d << 3;
+                flags |= +this.v << 6;
+                flags |= +this.n << 7;
+                this.write(0x100 + this.s, flags);
+                this.s = (this.s - 1) & 0xff;
+                break;
+            }
+            case "pla":
+                this.read(0x100 + this.s);
+                this.s = (this.s + 1) & 0xff;
+                this.a = this.read(0x100 + this.s);
+                break;
+            case "plp": {
+                this.read(0x100 + this.s);
+                this.s = (this.s + 1) & 0xff;
+                let flags = this.read(0x100 + this.s);
+                this.c = (flags & 0x01) > 0;
+                this.z = (flags & 0x02) > 0;
+                this.i = (flags & 0x04) > 0;
+                this.d = (flags & 0x08) > 0;
+                this.v = (flags & 0x40) > 0;
+                this.n = (flags & 0x80) > 0;
+                break;
+            }
             case "sta":
                 this.write(effective_address, this.a);
                 break;
