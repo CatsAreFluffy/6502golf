@@ -295,6 +295,25 @@ export default class Machine {
                 this.z = (this.a & value) == 0;
                 break;
             }
+            case "brk": {
+                this.write(0x100 + this.s, this.pc >> 8);
+                this.s = (this.s - 1) & 0xff;
+                this.write(0x100 + this.s, this.pc & 0xff);
+                this.s = (this.s - 1) & 0xff;
+                let flags = 0x10;
+                flags |= +this.c;
+                flags |= +this.z << 1;
+                flags |= +this.i << 2;
+                flags |= +this.d << 3;
+                flags |= +this.v << 6;
+                flags |= +this.n << 7;
+                this.write(0x100 + this.s, flags);
+                this.s = (this.s - 1) & 0xff;
+                let pc_low = this.read(0xfffe);
+                let pc_high = this.read(0xffff);
+                this.pc = (pc_high << 8) | pc_low;
+                break;
+            }
             case "clc":
             case "sec":
                 this.c = instruction == "sec";
@@ -350,6 +369,17 @@ export default class Machine {
                 this.y = (this.y + 1) & 0xff;
                 this.set_nz(this.y);
                 break;
+            case "jmp":
+                this.pc = effective_address;
+                break;
+            case "jsr":
+                this.read(0x100 + this.s);
+                this.write(0x100 + this.s, ((this.pc - 1) >> 8) & 0xff);
+                this.s = (this.s - 1) & 0xff;
+                this.write(0x100 + this.s, (this.pc - 1) & 0xff);
+                this.s = (this.s - 1) & 0xff;
+                this.pc = effective_address;
+                break;
             case "lda":
                 this.a = this.read(effective_address);
                 this.set_nz(this.a);
@@ -398,6 +428,33 @@ export default class Machine {
                 this.v = (flags & 0x40) > 0;
                 this.n = (flags & 0x80) > 0;
                 break;
+            }
+            case "rti": {
+                this.read(0x100 + this.s);
+                this.s = (this.s + 1) & 0xff;
+                let flags = this.read(0x100 + this.s);
+                this.c = (flags & 0x01) > 0;
+                this.z = (flags & 0x02) > 0;
+                this.i = (flags & 0x04) > 0;
+                this.d = (flags & 0x08) > 0;
+                this.v = (flags & 0x40) > 0;
+                this.n = (flags & 0x80) > 0;
+                this.s = (this.s + 1) & 0xff;
+                let pc_low = this.read(0x100 + this.s);
+                this.s = (this.s + 1) & 0xff;
+                let pc_high = this.read(0x100 + this.s);
+                this.s = (this.s + 1) & 0xff;
+                this.pc = (pc_high << 8) | pc_low;
+            }
+            case "rts": {
+                this.read(0x100 + this.s);
+                this.s = (this.s + 1) & 0xff;
+                let pc_low = this.read(0x100 + this.s);
+                this.s = (this.s + 1) & 0xff;
+                let pc_high = this.read(0x100 + this.s);
+                this.s = (this.s + 1) & 0xff;
+                this.pc = (pc_high << 8) | pc_low;
+                this.read_instruction();
             }
             case "sta":
                 this.write(effective_address, this.a);
