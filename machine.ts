@@ -393,6 +393,11 @@ export default class Machine {
                 this.y = this.read(effective_address);
                 this.set_nz(this.y);
                 break;
+            case "nop":
+                this.read(effective_address);
+                break;
+            case "nopa":
+                break;
             case "ora":
                 this.a |= this.read(effective_address);
                 this.set_nz(this.a);
