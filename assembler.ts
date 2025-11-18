@@ -84,6 +84,8 @@ export default function assemble(program: Program): number[] {
         ["implicit", 0],
         ["relative", 1],
         ["zeropage", 1],
+        ["zeropage,x", 1],
+        ["zeropage,y", 1],
     ])
     for(let command of program) {
         switch(command.type) {

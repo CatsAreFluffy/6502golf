@@ -182,6 +182,18 @@ export default class Machine {
             case "zeropage":
                 effective_address = this.read_instruction();
                 break;
+            case "zeropage,x": {
+                let base_address = this.read_instruction();
+                this.read(base_address);
+                effective_address = (base_address + this.x) & 0xff;
+                break;
+            }
+            case "zeropage,y": {
+                let base_address = this.read_instruction();
+                this.read(base_address);
+                effective_address = (base_address + this.y) & 0xff;
+                break;
+            }
             default:
                 throw new Error(`Unknown addressing mode ${mode}`);
         }
