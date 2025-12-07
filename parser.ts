@@ -21,7 +21,7 @@ function lex(input: string): Token[] {
     let position = 0;
     let start_of_line = true;
     let ret: Token[] = [];
-    let regexp = /([ \t]+|(?:[ \t]*\n)+(?:[ \t]+$)?|[0-9a-zA-Z_.$]+|'(?:[^\n\\']|\\.)'|<<|>>|[\(\)\[\]+-\/*|^&,#:<>])/sy;
+    let regexp = /([ \t]+|(?:[ \t]*\n)+(?:[ \t]+$)?|[0-9a-zA-Z_.$]+|'(?:[^\n\\']|\\.)'|<<|>>|[\(\)\[\]+-\/*|^&~,#:<>])/sy;
     regexp.lastIndex = 0;
     while(regexp.lastIndex < input.length) {
         let last_index = regexp.lastIndex;
