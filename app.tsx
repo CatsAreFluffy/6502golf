@@ -32,9 +32,15 @@ function assemble_source(src: string): [Machine | undefined, [boolean, number, n
 }
 
 function App() {
+    let code = default_code;
+    let local_code = localStorage.getItem("6502_golf_code");
+    if(local_code) {
+        code = local_code;
+    }
+
     const [machine, setMachine] = useState(
         () => {
-            let [machine, error_state] = assemble_source(default_code);
+            let [machine, error_state] = assemble_source(code);
             return machine ?? new Machine(new Array(65536).fill(0));
         }
     );
@@ -85,12 +91,6 @@ function App() {
             new_machine.pc = (new_machine.pc + 1) & 0xffff;
         }
         setMachine(new_machine);
-    }
-
-    let code = default_code;
-    let local_code = localStorage.getItem("6502_golf_code");
-    if(local_code) {
-        code = local_code;
     }
 
     return (
