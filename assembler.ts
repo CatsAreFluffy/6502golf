@@ -165,6 +165,12 @@ export default function assemble(program: Program): number[] {
         let value = eval_expr(expr, labels);
         if(relative) {
             value = (value - instruction_address) & 0xffff;
+            if(value < 0xff80 && value >= 128) {
+                console.log(value);
+                throw new LocatedError("Branch target too far", expr.start, expr.end);
+            }
+        } else if(length < 2 && (value < -256 || value >= 256)) {
+            throw new LocatedError("Value too large", expr.start, expr.end);
         }
         for(let i = 0; i < length; i++) {
             ret[(address + i) & 0xffff] = value & 0xff;
