@@ -1,15 +1,17 @@
 import React, { useState } from "react";
 import ReactCodeMirror, { ViewUpdate } from "@uiw/react-codemirror";
 
-import { lex, parse } from "./parser";
+import { lex, parse, ParseError } from "./parser";
 import assemble from "./assembler";
 import Machine from "./machine";
 import MachineView from "./machine_view";
+import { error_extension, error_field, set_error_field } from "./extension";
 
 const default_code = `
 `.replace(/^\n|\n$/g,"");
 
-function assemble_source(src: string): Machine | undefined {
+function assemble_source(src: string): [Machine | undefined, [boolean, number, number]] {
+    let new_error_state: [boolean, number, number] = [false, 0, 0];
     console.log("src:", src);
     let tokens = lex(src)
     console.log("lex:", tokens);
@@ -18,22 +20,33 @@ function assemble_source(src: string): Machine | undefined {
         console.log("parse:", parse_tree);
         let code = assemble(parse_tree);
         let machine = new Machine(code);
-        return machine;
+        return [machine, new_error_state];
     } catch(e) {
+        if(e instanceof ParseError) {
+            new_error_state = [true, e.token.position, e.token.position + e.token.token.length];
+            console.error(e.token);
+        }
         console.error(e);
     }
+    return [undefined, new_error_state];
 }
 
 function App() {
     const [machine, setMachine] = useState(
-        () => assemble_source(default_code) ?? new Machine(new Array(65536).fill(0))
+        () => {
+            let [machine, error_state] = assemble_source(default_code);
+            return machine ?? new Machine(new Array(65536).fill(0));
+        }
     );
 
     const handleChange = React.useCallback((val: string, viewUpdate: ViewUpdate) => {
-        let machine = assemble_source(val);
+        let [machine, error_state] = assemble_source(val);
         if(machine) {
             setMachine(machine);
         }
+        viewUpdate.view.dispatch({
+            effects: [set_error_field.of(error_state)],
+        });
     }, []);
 
     const handleStep = () => {
@@ -75,7 +88,7 @@ function App() {
 
     return (
         <>
-            <ReactCodeMirror value={default_code} onChange={handleChange}/>
+            <ReactCodeMirror value={default_code} onChange={handleChange} extensions={[error_field, error_extension]}/>
             <button onClick={handleStep}>Step</button>
             <button onClick={handleRunToJump}>Run until backwards jump</button>
             <button onClick={handleRunToBrk}>Run until BRK</button>

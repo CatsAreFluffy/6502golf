@@ -3,13 +3,12 @@ import { ParseAddressingMode } from "./instructions";
 type Token = {
     token: string,
     kind: "identifier" | "symbol" | "indent" | "newline" | "eof",
-    line: number,
-    column: number,
+    position: number,
 }
 
 function lex(input: string): Token[] {
-    let line = 1;
-    let column = 1;
+    let position = 0;
+    let start_of_line = true;
     let ret: Token[] = [];
     let regexp = /([ \t]+|(?:[ \t]*\n)+(?:[ \t]+$)?|[0-9a-zA-Z_.$]+|<<|>>|[\(\)\[\]+-\/*|^&,#:])/sy;
     regexp.lastIndex = 0;
@@ -24,25 +23,21 @@ function lex(input: string): Token[] {
         // simplify whitespace tokens
         if(/\s/.exec(token)) {
             if(token.includes("\n")) {
-                ret.push({token, line, column, kind: "newline"});
+                ret.push({token, position, kind: "newline"});
             }
-            else if(column == 1) {
+            else if(start_of_line) {
                 // single-line whitespace is only significant at the beginning
-                ret.push({token, line, column, kind: "indent"});
+                ret.push({token, position, kind: "indent"});
             }
         } else if(/[0-9a-zA-Z_.$]/.exec(token)) {
-            ret.push({token, line, column, kind: "identifier"});
+            ret.push({token, position, kind: "identifier"});
         } else {
-            ret.push({token, line, column, kind: "symbol"});
+            ret.push({token, position, kind: "symbol"});
         }
-        if(token.includes("\n")) {
-            line += token.replaceAll(/[^\n]/g, "").length;
-            column = token.length - token.lastIndexOf("\n");
-        } else {
-            column += token.length;
-        }
+        position += token.length;
+        start_of_line = token.match(/\n *$/) !== null;
     }
-    ret.push({token: "", line, column, kind: "eof"});
+    ret.push({token: "", position, kind: "eof"});
     return ret;
 }
 
@@ -73,14 +68,12 @@ class TokenStream {
     }
 }
 
-class ParseError extends Error {
-    line: number;
-    column: number;
+export class ParseError extends Error {
+    token: Token;
 
     constructor(message: string, token: Token) {
         super(message);
-        this.line = token.line;
-        this.column = token.column;
+        this.token = token;
     }
 }
 

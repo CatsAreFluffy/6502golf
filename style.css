@@ -9,3 +9,7 @@
 .last-data {
     background-color: cornflowerblue;
 }
+
+.error {
+    background-color: red;
+}
