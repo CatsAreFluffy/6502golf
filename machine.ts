@@ -562,7 +562,7 @@ export default class Machine {
                 this.set_nz(this.a);
                 break;
             default:
-                throw new Error(`Unknown instruction ${instruction}`);
+                throw new Error(`Unknown instruction ${instruction} (address ${instruction_start.toString(16).padStart(4, "0")})`);
         }
         if(!is_jump) {
             let instruction_end = this.pc;
