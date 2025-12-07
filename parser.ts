@@ -65,6 +65,10 @@ class TokenStream {
         this.index = 0;
     }
 
+    position(): number {
+        return this.tokens[this.index]!.position;
+    }
+
     peek(): Token {
         if(!this.eof()) {
             return this.tokens[this.index];
@@ -87,12 +91,16 @@ export class ParseError extends LocatedError {
     token: Token;
 
     constructor(message: string, token: Token) {
-        super(message, token.position, token.position + token.token.length);
+        if(token.kind == "newline" || token.kind == "eof") {
+            super(message, Math.max(0, token.position - 1), token.position);
+        } else {
+            super(message, token.position, token.position + token.token.length);
+        }
         this.token = token;
     }
 }
 
-type Expr = {
+type Expr = ({
     type: "binop",
     operation: "+" | "-" | "*" | "/" | "%" | "<<" | ">>" | "&" | "|" | "^",
     left: Expr,
@@ -107,9 +115,14 @@ type Expr = {
 } | {
     type: "constant",
     value: number,
+}) & {
+    start: number,
+    end: number,
 };
 function parse_short_expr(stream: TokenStream): Expr {
     let next = stream.next();
+    const start = next.position;
+    const end = start + next.token.length;
     switch(next.kind) {
         case "identifier": {
             let head: Expr;
@@ -118,7 +131,7 @@ function parse_short_expr(stream: TokenStream): Expr {
                 if(isNaN(value)) {
                     throw new ParseError("Invalid number", next);
                 }
-                return {type: "constant", value};
+                return {type: "constant", value, start, end};
             } else if(next.token[0] == "'") {
                 let char = String.fromCharCode(0);
                 if(next.token[1] == "\\") {
@@ -139,21 +152,21 @@ function parse_short_expr(stream: TokenStream): Expr {
                 } else {
                     char = next.token[1];
                 }
-                return {type: "constant", value: char.charCodeAt(0)};
+                return {type: "constant", value: char.charCodeAt(0), start, end};
             } else if(next.token.match(/^[0-9]/)) {
                 let value = parseInt(next.token);
                 if(isNaN(value)) {
                     throw new ParseError("Invalid number", next);
                 }
-                return {type: "constant", value};
+                return {type: "constant", value, start, end};
             } else {
-                return {type: "label", label: next.token};
+                return {type: "label", label: next.token, start, end};
             }
         }
         case "symbol":
             if(next.token.match(/-|~|<|>/)) {
                 let rest = parse_short_expr(stream);
-                return {type: "op", operation: next.token as any, body: rest};
+                return {type: "op", operation: next.token as any, body: rest, start, end};
             } else if(next.token == "[") {
                 let body = parse_expr(stream);
                 if(stream.next().token != "]") {
@@ -172,7 +185,7 @@ function parse_expr(stream: TokenStream): Expr {
     while(!stream.eof() && stream.peek().kind == "symbol" && stream.peek().token.match(/^[+\-*/&|^]$|^<<$|^>>$/)) {
         let operation = stream.next().token as "+" | "-" | "*" | "/" | "%" | "<<" | ">>" | "&" | "|" | "^";
         let right = parse_short_expr(stream);
-        head = {type: "binop", operation, left: head, right};
+        head = {type: "binop", operation, left: head, right, start: head.start, end: right.end};
     }
     return head;
 }
@@ -180,7 +193,8 @@ function parse_expr(stream: TokenStream): Expr {
 type Operand = {mode: ParseAddressingMode, body: Expr};
 function parse_operand(stream: TokenStream): Operand {
     if(stream.eof() || stream.peek().kind == "newline") {
-        return {mode: "implicit", body: {type: "constant", value: 0}};
+        const pos = stream.position();
+        return {mode: "implicit", body: {type: "constant", value: 0, start: pos, end: pos}};
     }
     let mode: ParseAddressingMode = "absolute";
     let indirect = false;
@@ -243,13 +257,18 @@ function parse_operand(stream: TokenStream): Operand {
     return {mode, body};
 }
 
-type Instruction = [string, Operand]
+type Instruction = {
+    instruction: string,
+    operand: Operand,
+    start: number,
+    end: number,
+}
 function parse_instruction(stream: TokenStream): Instruction {
-    let opcode = stream.next();
-    if(opcode.kind != "identifier") {
-        throw new ParseError("Instructions must not be symbols", opcode);
+    let instruction = stream.next();
+    if(instruction.kind != "identifier") {
+        throw new ParseError("Instructions must not be symbols", instruction);
     }
-    return [opcode.token, parse_operand(stream)];
+    return {instruction: instruction.token, operand: parse_operand(stream), start: instruction.position, end: stream.position()};
 }
 
 type Label = string;
@@ -261,7 +280,7 @@ function parse_label(stream: TokenStream): Label {
     return label.token;
 }
 
-type Command = {
+type Command = ({
     type: "label",
     body: Label,
 } | {
@@ -274,9 +293,10 @@ type Command = {
     type: "dc",
     length: number,
     value: Expr,
-};
+});
 function parse_command(stream: TokenStream): Command {
     let name = stream.peek().token;
+    const start = stream.position();
     let type = "directive";
     let command: Command;
     switch(name) {
@@ -312,7 +332,8 @@ function parse_line(stream: TokenStream): Command[] {
     let ret: Command[] = [];
     let indent = stream.peek()
     if(indent.kind != "indent") {
-        ret.push({type: "label", body: parse_label(stream)});
+        const label = parse_label(stream);
+        ret.push({type: "label", body: label});
     } else {
         stream.next();
     }

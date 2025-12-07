@@ -1,4 +1,4 @@
-import { Operand, Command, Program, Expr } from "./parser";
+import { Operand, Command, Program, Expr, LocatedError } from "./parser";
 import { AssembleInstruction, ParseAddressingMode, AssembleAddressingMode, encodings } from "./instructions";
 
 type Relocation = {
@@ -64,7 +64,7 @@ function eval_expr(expr: Expr, labels: Map<string, number>): number {
         case "label": {
             let value = labels.get(expr.label);
             if(value === undefined) {
-                throw new Error(`Unknown label ${expr.label}`);
+                throw new LocatedError(`Unknown label ${expr.label}`, expr.start, expr.end);
             }
             return value;
         }
@@ -108,7 +108,7 @@ export default function assemble(program: Program): number[] {
                 org = (org + command.length) & 0xffff;
                 break;
             case "instruction": {
-                let [instruction, operand] = command.body;
+                let {instruction, operand, start, end} = command.body;
                 let mode: AssembleAddressingMode = operand.mode;
                 if(branch_instructions.has(instruction)) {
                     mode = "relative";
@@ -125,23 +125,23 @@ export default function assemble(program: Program): number[] {
                             mode = "zeropage,y";
                             break;
                         default:
-                            throw Error(`Illegal addressing mode ${mode} for ${instruction}`);
+                            throw new LocatedError(`Illegal addressing mode ${mode} for ${instruction}`, start, end);
                     }
                     instruction = instruction.slice(0, 3);
                 }
                 let modes = encodings.get(instruction as AssembleInstruction);
                 if(modes === undefined) {
-                    throw new Error(`Unknown instruction ${instruction}`);
+                    throw new LocatedError(`Unknown instruction ${instruction}`, start, start + command.body.instruction.length);
                 }
                 let opcode = modes.get(mode);
                 if(opcode === undefined) {
-                    throw new Error(`Illegal addressing mode ${mode} for ${instruction}`);
+                    throw new LocatedError(`Illegal addressing mode ${mode} for ${instruction}`, start, end);
                 }
                 ret[org] = opcode;
                 org = (org + 1) & 0xffff;
                 let operand_length = operand_lengths.get(mode);
                 if(operand_length === undefined) {
-                    throw new Error(`Unknown length for addressing mode ${mode}`);
+                    throw new LocatedError(`Unknown length for addressing mode ${mode}`, start, end);
                 }
                 relocations.push({
                     address: org,
