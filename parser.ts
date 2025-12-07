@@ -234,11 +234,7 @@ function parse_instruction(stream: TokenStream): Instruction {
     if(opcode.kind != "identifier") {
         throw new ParseError("Instructions must not be symbols", opcode);
     }
-    let operand = parse_operand(stream);
-    if(!stream.eof() && stream.peek().kind != "newline") {
-        throw new ParseError("Unexpected token after instruction", stream.peek());
-    }
-    return [opcode.token, operand];
+    return [opcode.token, parse_operand(stream)];
 }
 
 type Label = string;
@@ -266,10 +262,13 @@ type Command = {
 };
 function parse_command(stream: TokenStream): Command {
     let name = stream.peek().token;
+    let type = "directive";
+    let command: Command;
     switch(name) {
         case "org":
             stream.next();
-            return {type: "org", base: parse_expr(stream)};
+            command = {type: "org", base: parse_expr(stream)};
+            break;
         case "dc.b":
         case "dc.w":
         case "byte":
@@ -281,11 +280,18 @@ function parse_command(stream: TokenStream): Command {
                 ["dc.w", 2],
                 ["word", 2],
             ]);
-            return {type: "dc", length: lengths.get(name)!, value: parse_expr(stream)};
+            command = {type: "dc", length: lengths.get(name)!, value: parse_expr(stream)};
+            break;
         }
         default:
-            return {type: "instruction", body: parse_instruction(stream)}
+            type = "instruction";
+            command = {type: "instruction", body: parse_instruction(stream)};
+            break;
     }
+    if(!stream.eof() && stream.peek().kind != "newline") {
+        throw new ParseError(`Unexpected token after ${type}`, stream.peek());
+    }
+    return command;
 }
 function parse_line(stream: TokenStream): Command[] {
     let ret: Command[] = [];
