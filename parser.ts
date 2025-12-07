@@ -6,6 +6,17 @@ type Token = {
     position: number,
 }
 
+export class LocatedError extends Error {
+    start: number;
+    end: number;
+
+    constructor(message: string, start: number, end: number) {
+        super(message);
+        this.start = start;
+        this.end = end;
+    }
+}
+
 function lex(input: string): Token[] {
     let position = 0;
     let start_of_line = true;
@@ -13,10 +24,14 @@ function lex(input: string): Token[] {
     let regexp = /([ \t]+|(?:[ \t]*\n)+(?:[ \t]+$)?|[0-9a-zA-Z_.$]+|'(?:[^\n\\']|\\.)'|<<|>>|[\(\)\[\]+-\/*|^&,#:<>])/sy;
     regexp.lastIndex = 0;
     while(regexp.lastIndex < input.length) {
+        let last_index = regexp.lastIndex;
         let match = regexp.exec(input);
         if(!match) {
-            console.error("No match for", input);
-            return ret;
+            let line_regexp = /.*/y;
+            line_regexp.lastIndex = last_index;
+            console.log(line_regexp.lastIndex);
+            let line_length = line_regexp.exec(input)![0].length;
+            throw new LocatedError("Lexer error", position, position + line_length);
         }
 
         let token = match[1];
@@ -68,11 +83,11 @@ class TokenStream {
     }
 }
 
-export class ParseError extends Error {
+export class ParseError extends LocatedError {
     token: Token;
 
     constructor(message: string, token: Token) {
-        super(message);
+        super(message, token.position, token.position + token.token.length);
         this.token = token;
     }
 }

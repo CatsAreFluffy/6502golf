@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import ReactCodeMirror, { ViewUpdate } from "@uiw/react-codemirror";
 
-import { lex, parse, ParseError } from "./parser";
+import { lex, LocatedError, parse } from "./parser";
 import assemble from "./assembler";
 import Machine from "./machine";
 import MachineView from "./machine_view";
@@ -16,18 +16,18 @@ const default_code = `
 function assemble_source(src: string): [Machine | undefined, [boolean, number, number]] {
     let new_error_state: [boolean, number, number] = [false, 0, 0];
     console.log("src:", src);
-    let tokens = lex(src)
-    console.log("lex:", tokens);
     try {
+        let tokens = lex(src)
+        console.log("lex:", tokens);
         let parse_tree = parse(tokens);
         console.log("parse:", parse_tree);
         let code = assemble(parse_tree);
         let machine = new Machine(code);
         return [machine, new_error_state];
     } catch(e) {
-        if(e instanceof ParseError) {
-            new_error_state = [true, e.token.position, e.token.position + e.token.token.length];
-            console.error(e.token);
+        if(e instanceof LocatedError) {
+            new_error_state = [true, e.start, e.end];
+            console.log(src.slice(e.start, e.end));
         }
         console.error(e);
     }
