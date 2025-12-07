@@ -6,6 +6,7 @@ import assemble from "./assembler";
 import Machine from "./machine";
 import MachineView from "./machine_view";
 import { error_extension, error_field, set_error_field } from "./extension";
+import { jams } from "./instructions";
 
 const default_code = `
 `.replace(/^\n|\n$/g,"");
@@ -77,7 +78,8 @@ function App() {
         let now = Date.now();
         let i = 0;
         for(; i < 1000000; i++) {
-            if(!new_machine.memory[new_machine.pc]) {
+            let opcode = new_machine.memory[new_machine.pc]
+            if(!opcode || jams[opcode]) {
                 break;
             }
             new_machine.step();

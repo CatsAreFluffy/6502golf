@@ -82,6 +82,7 @@ export const instructions: Instruction[] = [
 ];
 
 export const encodings: Map<AssembleInstruction, Map<AssembleAddressingMode, number>> = new Map();
+export const jams: boolean[] = [];
 for(let i = 0; i < 256; i++) {
     let instruction = instructions[i];
     let assemble_instruction = instruction.slice(0,3) as AssembleInstruction;
@@ -93,5 +94,6 @@ for(let i = 0; i < 256; i++) {
         encodings.set(assemble_instruction, slot);
     }
     slot.set(assemble_mode, i);
+    jams.push(assemble_instruction == "jam");
 }
 encodings.get("sbc")!.set("immediate", 0xe9);
