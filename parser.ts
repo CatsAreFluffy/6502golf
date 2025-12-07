@@ -166,7 +166,7 @@ function parse_short_expr(stream: TokenStream): Expr {
         case "symbol":
             if(next.token.match(/-|~|<|>/)) {
                 let rest = parse_short_expr(stream);
-                return {type: "op", operation: next.token as any, body: rest, start, end};
+                return {type: "op", operation: next.token as any, body: rest, start, end: stream.position()};
             } else if(next.token == "[") {
                 let body = parse_expr(stream);
                 if(stream.next().token != "]") {
