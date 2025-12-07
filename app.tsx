@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import ReactCodeMirror, { ViewUpdate } from "@uiw/react-codemirror";
 
 import { lex, parse, ParseError } from "./parser";
@@ -7,6 +7,8 @@ import Machine from "./machine";
 import MachineView from "./machine_view";
 import { error_extension, error_field, set_error_field } from "./extension";
 import { jams } from "./instructions";
+import challenges from "./challenges";
+import OutputView from "./output_view";
 
 const default_code = `
 `.replace(/^\n|\n$/g,"");
@@ -37,6 +39,21 @@ function App() {
     let local_code = localStorage.getItem("6502_golf_code");
     if(local_code) {
         code = local_code;
+    }
+
+    const [challenge_name, setChallengeName] = useState(
+        () => challenges.keys().next().value!
+    )
+    
+    const current_challenge = challenges.get(challenge_name)!;
+
+    const handleSelectChallenge = (challenge: string) => () => {
+        setChallengeName(challenge);
+    }
+
+    const challenge_buttons = [];
+    for(let challenge of challenges.keys()) {
+        challenge_buttons.push(<button key={challenge} onClick={handleSelectChallenge(challenge)}>{challenge}</button>);
     }
 
     const [machine, setMachine] = useState(
@@ -95,14 +112,42 @@ function App() {
         setMachine(new_machine);
     }
 
+    const handleRunToEnd = () => {
+        let new_machine = machine.clone();
+        let now = Date.now();
+        let i = 0;
+        for(; i < 1000000; i++) {
+            let opcode = new_machine.memory[new_machine.pc]
+            if(jams[opcode]) {
+                break;
+            }
+            new_machine.step();
+        }
+        let millis = Date.now() - now;
+        if(i > 0) {
+            console.log("One step takes", (millis*1e6/i).toFixed(2), "ns");
+            console.log("One cycle takes", (millis*1e6/(new_machine.cycles - machine.cycles)).toFixed(2), "ns");
+        }
+        setMachine(new_machine);
+    }
+
+    let expected_output_bytes = useMemo(() => current_challenge.output(), [challenge_name]);
+
     return (
         <div className="app">
             <h1>6502 Golf</h1>
+            <div>Challenges: {challenge_buttons}</div>
+            <b>{challenge_name}</b>: {current_challenge.description}
             <ReactCodeMirror className="editor" value={code} onChange={handleChange} extensions={[error_field, error_extension]}/>
             <button onClick={handleStep}>Step</button>
             <button onClick={handleRunToJump}>Run until backwards jump</button>
             <button onClick={handleRunToBrk}>Run until BRK</button>
+            <button onClick={handleRunToEnd}>Run until end</button>
             <MachineView machine={machine} />
+            Current output:
+            <OutputView data={machine.memory.slice(0x8000)} />
+            Expected output:
+            <OutputView data={expected_output_bytes} />
         </div>
     );
 }

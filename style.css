@@ -10,6 +10,13 @@
     margin-bottom: 1rem;
 }
 
+.output-view {
+    border: 1px solid black;
+    font-family: 'Courier New', Courier, monospace;
+    height: 10rem;
+    overflow: scroll;
+}
+
 .cm-editor {
     height: 100%;
 }
