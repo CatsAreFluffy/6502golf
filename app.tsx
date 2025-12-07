@@ -63,11 +63,16 @@ function App() {
         }
     );
 
+    const [bytes, setBytes] = useState(
+        () => machine.nz_bytes()
+    );
+
     const handleChange = React.useCallback((val: string, viewUpdate: ViewUpdate) => {
         localStorage.setItem("6502_golf_code", val);
         let [machine, error_state] = assemble_source(val);
         if(machine) {
             setMachine(machine);
+            setBytes(machine.nz_bytes());
         }
         viewUpdate.view.dispatch({
             effects: [set_error_field.of(error_state)],
@@ -137,7 +142,8 @@ function App() {
         <div className="app">
             <h1>6502 Golf</h1>
             <div>Challenges: {challenge_buttons}</div>
-            <b>{challenge_name}</b>: {current_challenge.description}
+            <b>{challenge_name}</b>: {current_challenge.description}<br />
+            {bytes} bytes
             <ReactCodeMirror className="editor" value={code} onChange={handleChange} extensions={[error_field, error_extension]}/>
             <button onClick={handleStep}>Step</button>
             <button onClick={handleRunToJump}>Run until backwards jump</button>

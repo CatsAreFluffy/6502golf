@@ -84,6 +84,14 @@ export default class Machine {
         this.memory[address] = value;
         this.cycles++;
     }
+
+    nz_bytes(): number {
+        let bytes = 0;
+        for(let i of this.memory) {
+            bytes += +(i != 0);
+        }
+        return bytes;
+    }
     
     set_nz(value: number) {
         this.z = value == 0;
