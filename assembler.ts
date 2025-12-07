@@ -25,9 +25,17 @@ function eval_expr(expr: Expr, labels: Map<string, number>): number {
                     return (top + bottom) | 0;
                 }
                 case "/":
-                    throw new Error("/ is unimplemented");
-                case "%":
-                    throw new Error("/ is unimplemented");
+                case "%": {
+                    if(right == 0) {
+                        return 0;
+                    }
+                    const quot = (left / right) | 0;
+                    if(expr.operation == "/") {
+                        return quot;
+                    } else {
+                        return left - quot * right | 0;
+                    }
+                }
                 case "<<":
                     return left << right;
                 case ">>":
