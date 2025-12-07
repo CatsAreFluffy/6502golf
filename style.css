@@ -1,3 +1,23 @@
+.app {
+    width: 1000px;
+    margin-left: auto;
+    margin-right: auto;
+    font-family: sans-serif;
+}
+
+.editor {
+    height: 30rem;
+    margin-bottom: 1rem;
+}
+
+.cm-editor {
+    height: 100%;
+}
+
+.cm-scroller {
+    overflow: auto;
+}
+
 .viewer {
     font-family: 'Courier New', Courier, monospace;
 }

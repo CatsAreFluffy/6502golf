@@ -87,13 +87,14 @@ function App() {
     }
 
     return (
-        <>
-            <ReactCodeMirror value={default_code} onChange={handleChange} extensions={[error_field, error_extension]}/>
+        <div className="app">
+            <h1>6502 Golf</h1>
+            <ReactCodeMirror className="editor" value={default_code} onChange={handleChange} extensions={[error_field, error_extension]}/>
             <button onClick={handleStep}>Step</button>
             <button onClick={handleRunToJump}>Run until backwards jump</button>
             <button onClick={handleRunToBrk}>Run until BRK</button>
             <MachineView machine={machine} />
-        </>
+        </div>
     );
 }
 export default App;
