@@ -40,6 +40,7 @@ function App() {
     );
 
     const handleChange = React.useCallback((val: string, viewUpdate: ViewUpdate) => {
+        localStorage.setItem("6502_golf_code", val);
         let [machine, error_state] = assemble_source(val);
         if(machine) {
             setMachine(machine);
@@ -86,10 +87,16 @@ function App() {
         setMachine(new_machine);
     }
 
+    let code = default_code;
+    let local_code = localStorage.getItem("6502_golf_code");
+    if(local_code) {
+        code = local_code;
+    }
+
     return (
         <div className="app">
             <h1>6502 Golf</h1>
-            <ReactCodeMirror className="editor" value={default_code} onChange={handleChange} extensions={[error_field, error_extension]}/>
+            <ReactCodeMirror className="editor" value={code} onChange={handleChange} extensions={[error_field, error_extension]}/>
             <button onClick={handleStep}>Step</button>
             <button onClick={handleRunToJump}>Run until backwards jump</button>
             <button onClick={handleRunToBrk}>Run until BRK</button>
