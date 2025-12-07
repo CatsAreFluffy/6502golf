@@ -67,12 +67,15 @@ function App() {
         () => machine.nz_bytes()
     );
 
+    const [judgment, setJudgment] = useState(() => "");
+
     const handleChange = React.useCallback((val: string, viewUpdate: ViewUpdate) => {
         localStorage.setItem("6502_golf_code", val);
         let [machine, error_state] = assemble_source(val);
         if(machine) {
             setMachine(machine);
             setBytes(machine.nz_bytes());
+            setJudgment("");
         }
         viewUpdate.view.dispatch({
             effects: [set_error_field.of(error_state)],
@@ -117,6 +120,8 @@ function App() {
         setMachine(new_machine);
     }
 
+    let expected_output_bytes = useMemo(() => current_challenge.output(), [challenge_name]);
+
     const handleRunToEnd = () => {
         let new_machine = machine.clone();
         let now = Date.now();
@@ -134,16 +139,29 @@ function App() {
             console.log("One cycle takes", (millis*1e6/(new_machine.cycles - machine.cycles)).toFixed(2), "ns");
         }
         setMachine(new_machine);
+        if(jams[new_machine.memory[new_machine.pc]]) {
+            let pass = true;
+            for(let j = 0; j < expected_output_bytes.length; j++) {
+                if(new_machine.memory[0x8000 + j] != expected_output_bytes[j]) {
+                    console.log(j, new_machine.memory[0x8000 + j], expected_output_bytes[j]);
+                    pass = false;
+                    break;
+                }
+            }
+            if(pass) {
+                setJudgment(` (passed in ${new_machine.cycles} cycles)`);
+            } else {
+                setJudgment(` (failed)`);
+            }
+        }
     }
-
-    let expected_output_bytes = useMemo(() => current_challenge.output(), [challenge_name]);
 
     return (
         <div className="app">
             <h1>6502 Golf</h1>
             <div>Challenges: {challenge_buttons}</div>
             <b>{challenge_name}</b>: {current_challenge.description}<br />
-            {bytes} bytes
+            {bytes} bytes{judgment}
             <ReactCodeMirror className="editor" value={code} onChange={handleChange} extensions={[error_field, error_extension]}/>
             <button onClick={handleStep}>Step</button>
             <button onClick={handleRunToJump}>Run until backwards jump</button>
