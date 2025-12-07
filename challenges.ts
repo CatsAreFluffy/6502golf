@@ -4,7 +4,7 @@ export type Challenge = {
 };
 
 export const EulerConstant: Challenge = {
-    description: "Calculate the first 1001 digits Euler's constant. Output is read starting from address 0x8000, and ends at a null byte.",
+    description: "Calculate the first 1001 digits of Euler's constant. Output is read starting from address 0x8000, and ends at a null byte.",
     output: () => {
         let output = "2.";
         let buffer = new Array(500).fill(1);
