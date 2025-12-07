@@ -54,7 +54,9 @@ export const CountTo1000: Challenge = {
             for(let j of value) {
                 output.push(j.charCodeAt(0));
             }
-            output.push(0x0a);
+            if(i < 1000) {
+                output.push(0x0a);
+            }
         }
         output.push(0x00);
         return output;
