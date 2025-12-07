@@ -23,7 +23,7 @@ export const error_extension = ViewPlugin.define((view) => {
         decorations: RangeSet.of([]) as DecorationSet,
         update(update) {
             const field = update.view.state.field(error_field);
-            if(field[0]) {
+            if(field[0] && field[1] != field[2]) {
                 this.decorations = RangeSet.of([error_decoration.range(field[1], field[2])]);
             } else {
                 this.decorations = RangeSet.of([]);
