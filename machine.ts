@@ -423,6 +423,10 @@ export default class Machine {
                 this.last_instruction = new MemoryRange(instruction_start, this.pc);
                 this.pc = effective_address;
                 break;
+            case "lax":
+                this.a = this.x = this.read(effective_address);
+                this.set_nz(this.a);
+                break;
             case "lda":
                 this.a = this.read(effective_address);
                 this.set_nz(this.a);
