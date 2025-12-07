@@ -10,7 +10,7 @@ function lex(input: string): Token[] {
     let position = 0;
     let start_of_line = true;
     let ret: Token[] = [];
-    let regexp = /([ \t]+|(?:[ \t]*\n)+(?:[ \t]+$)?|[0-9a-zA-Z_.$]+|<<|>>|[\(\)\[\]+-\/*|^&,#:])/sy;
+    let regexp = /([ \t]+|(?:[ \t]*\n)+(?:[ \t]+$)?|[0-9a-zA-Z_.$]+|'(?:[^\\']|\\.)'|<<|>>|[\(\)\[\]+-\/*|^&,#:])/sy;
     regexp.lastIndex = 0;
     while(regexp.lastIndex < input.length) {
         let match = regexp.exec(input);
@@ -29,7 +29,7 @@ function lex(input: string): Token[] {
                 // single-line whitespace is only significant at the beginning
                 ret.push({token, position, kind: "indent"});
             }
-        } else if(/[0-9a-zA-Z_.$]/.exec(token)) {
+        } else if(/[0-9a-zA-Z_.$']/.exec(token)) {
             ret.push({token, position, kind: "identifier"});
         } else {
             ret.push({token, position, kind: "symbol"});
@@ -104,6 +104,27 @@ function parse_short_expr(stream: TokenStream): Expr {
                     throw new ParseError("Invalid number", next);
                 }
                 return {type: "constant", value};
+            } else if(next.token[0] == "'") {
+                let char = String.fromCharCode(0);
+                if(next.token[1] == "\\") {
+                    switch(next.token[2]) {
+                        case "n":
+                            char = "\n";
+                            break;
+                        case "r":
+                            char = "\r";
+                            break;
+                        case "t":
+                            char = "\t";
+                            break;
+                        case "\\":
+                            char = "\\";
+                            break;
+                    }
+                } else {
+                    char = next.token[1];
+                }
+                return {type: "constant", value: char.charCodeAt(0)};
             } else if(next.token.match(/^[0-9]/)) {
                 let value = parseInt(next.token);
                 if(isNaN(value)) {
