@@ -126,7 +126,7 @@ function App() {
         let new_machine = machine.clone();
         let now = Date.now();
         let i = 0;
-        for(; i < 1000000; i++) {
+        for(; i < 100000000; i++) {
             let opcode = new_machine.memory[new_machine.pc]
             if(jams[opcode]) {
                 break;
