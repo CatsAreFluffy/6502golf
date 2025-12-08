@@ -533,6 +533,15 @@ export default class Machine {
                 this.read_instruction();
                 break;
             }
+            case "sbx": {
+                let ax = this.a & this.x;
+                let value = this.read(effective_address);
+                let result = ax + (value ^ 0xff) + 1;
+                this.x = result & 0xff;
+                this.set_nz(this.x);
+                this.c = result >= 256;
+                break;
+            }
             case "sta":
                 this.write(effective_address, this.a);
                 break;
