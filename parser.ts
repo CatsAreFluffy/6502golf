@@ -21,7 +21,7 @@ function lex(input: string): Token[] {
     let position = 0;
     let start_of_line = true;
     let ret: Token[] = [];
-    let regexp = /([ \t]+|(?:[ \t]*(?:;[^\n]*)?\n)+(?:[ \t]+$)?|[0-9a-zA-Z_.$]+|'(?:[^\n\\']|\\.)'|<<|>>|[\(\)\[\]+-\/*|^&~,#:<>])/sy;
+    let regexp = /([ \t]+|(?:[ \t]*(?:;[^\n]*)?\n)+(?:[ \t]+$)?|[0-9a-zA-Z_.$]+|'(?:[^\n\\']|\\.)'|<<|>>|[\(\)\[\]+-\/*|^&~,#:<>=])/sy;
     regexp.lastIndex = 0;
     while(regexp.lastIndex < input.length) {
         let last_index = regexp.lastIndex;
@@ -293,6 +293,10 @@ type Command = ({
     type: "dc",
     length: number,
     value: Expr,
+} | {
+    type: "equ",
+    label: Label | undefined,
+    value: Expr,
 });
 function parse_command(stream: TokenStream): Command {
     let name = stream.peek().token;
@@ -318,6 +322,12 @@ function parse_command(stream: TokenStream): Command {
             command = {type: "dc", length: lengths.get(name)!, value: parse_expr(stream)};
             break;
         }
+        case "=":
+        case "equ": {
+            stream.next();
+            command = {type: "equ", label: undefined, value: parse_expr(stream)};
+            break;
+        }
         default:
             type = "instruction";
             command = {type: "instruction", body: parse_instruction(stream)};
@@ -329,19 +339,45 @@ function parse_command(stream: TokenStream): Command {
     return command;
 }
 function parse_line(stream: TokenStream): Command[] {
-    let ret: Command[] = [];
-    let indent = stream.peek()
+    let indent = stream.peek();
+    let label: Label | undefined = undefined;
     if(indent.kind != "indent") {
-        const label = parse_label(stream);
-        ret.push({type: "label", body: label});
+        label = parse_label(stream);
     } else {
         stream.next();
     }
     if(!stream.eof() && stream.peek().kind != "newline") {
-        // ret.push({type: "instruction", body: parse_instruction(stream)});
-        ret.push(parse_command(stream));
+        let next = stream.peek();
+        let command = parse_command(stream)
+        switch(command.type) {
+            case "org": {
+                // label then org sets the label to the new org
+                if(label !== undefined) {
+                    return [command, {type: "label", body: label}];
+                } else {
+                    return [command];
+                }
+            }
+            case "equ": {
+                if(label === undefined) {
+                    throw new ParseError("Assignments must have a label", next);
+                }
+                command.label = label;
+                return [command];
+            }
+            default:
+                if(label !== undefined) {
+                    return [{type: "label", body: label}, command];
+                } else {
+                    return [command];
+                }
+        }
     }
-    return ret;
+    if(label !== undefined) {
+        return [{type: "label", body: label}];
+    } else {
+        return [];
+    }
 }
 
 type Program = Command[]

@@ -9,11 +9,14 @@ type Relocation = {
     relative: boolean,
 }
 
-function eval_expr(expr: Expr, labels: Map<string, number>): number {
+function eval_expr(expr: Expr, labels: Map<string, Expr>, depth: number = 0): number {
+    if(depth > labels.size) {
+        throw new LocatedError("Self-referential expression", expr.start, expr.end);
+    }
     switch(expr.type) {
         case "binop": {
-            let left = eval_expr(expr.left, labels);
-            let right = eval_expr(expr.right, labels);
+            let left = eval_expr(expr.left, labels, depth);
+            let right = eval_expr(expr.right, labels, depth);
             switch(expr.operation) {
                 case "+":
                     return (left + right) | 0;
@@ -49,7 +52,7 @@ function eval_expr(expr: Expr, labels: Map<string, number>): number {
             }
         }
         case "op": {
-            let body = eval_expr(expr.body, labels);
+            let body = eval_expr(expr.body, labels, depth);
             switch(expr.operation) {
                 case "-":
                     return -body | 0;
@@ -62,11 +65,11 @@ function eval_expr(expr: Expr, labels: Map<string, number>): number {
             }
         }
         case "label": {
-            let value = labels.get(expr.label);
-            if(value === undefined) {
+            let subexpr = labels.get(expr.label);
+            if(subexpr === undefined) {
                 throw new LocatedError(`Unknown label ${expr.label}`, expr.start, expr.end);
             }
-            return value;
+            return eval_expr(subexpr, labels, depth + 1);
         }
         case "constant":
             return expr.value;
@@ -76,7 +79,7 @@ function eval_expr(expr: Expr, labels: Map<string, number>): number {
 export default function assemble(program: Program): number[] {
     let ret = new Array(65536).fill(0);
     let relocations: Relocation[] = [];
-    let labels: Map<string, number> = new Map();
+    let labels: Map<string, Expr> = new Map();
     // reset=0x200
     ret[0xfffd] = 2;
     let org = 0x200;
@@ -107,6 +110,10 @@ export default function assemble(program: Program): number[] {
                 })
                 org = (org + command.length) & 0xffff;
                 break;
+            case "equ": {
+                labels.set(command.label!, command.value);
+                break;
+            }
             case "instruction": {
                 let {instruction, operand, start, end} = command.body;
                 let mode: AssembleAddressingMode = operand.mode;
@@ -154,7 +161,7 @@ export default function assemble(program: Program): number[] {
                 break;
             }
             case "label":
-                labels.set(command.body, org);
+                labels.set(command.body, {type: "constant", value: org, start: 0, end: 0});
                 break;
             case "org":
                 org = eval_expr(command.base, new Map());
