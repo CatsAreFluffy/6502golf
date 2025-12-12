@@ -7,7 +7,7 @@ export default function OutputView({ data }: {data: number[]}) {
         if(!i) {
             break;
         } else if(i == 0x0a) {
-            tags.push(<text key={tags.length}>{line}</text>, <br key={tags.length + 1} />);
+            tags.push(line, <br key={tags.length + 1} />);
             line = "";
         } else if(i < 0x20 || i >= 0x7f) {
             line += "�";
@@ -16,7 +16,7 @@ export default function OutputView({ data }: {data: number[]}) {
         }
     }
     if(line.length) {
-        tags.push(<text key={tags.length}>{line}</text>);
+        tags.push(line);
     }
     return <div className="output-view">{tags}</div>;
 }
