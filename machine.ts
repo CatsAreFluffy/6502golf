@@ -1,4 +1,4 @@
-import { modes, instructions } from "./instructions";
+import { exec_modes, instructions } from "./instructions";
 
 export type AccessType = "instruction" | "pointer" | "data" | "dummy";
 
@@ -94,7 +94,7 @@ export default class Machine {
         let instruction_start = this.pc;
         let opcode = this.read_instruction();
         let instruction = instructions[opcode];
-        let mode = modes[opcode];
+        let mode = exec_modes[opcode];
         let effective_address = 0;
         switch(mode) {
             case "absolute": {
@@ -393,14 +393,17 @@ export default class Machine {
             case "jmp":
                 this.pc = effective_address;
                 break;
-            case "jsr":
+            case "jsr": {
+                let new_pcl = this.read(effective_address, "instruction");
                 this.read(0x100 + this.s, "dummy");
-                this.write(0x100 + this.s, ((this.pc - 1) >> 8) & 0xff, "data");
+                this.write(0x100 + this.s, (this.pc >> 8) & 0xff, "data");
                 this.s = (this.s - 1) & 0xff;
-                this.write(0x100 + this.s, (this.pc - 1) & 0xff, "data");
+                this.write(0x100 + this.s, this.pc & 0xff, "data");
                 this.s = (this.s - 1) & 0xff;
-                this.pc = effective_address;
+                let new_pch = this.read_instruction();
+                this.pc = (new_pch << 8) | new_pcl;
                 break;
+            }
             case "lax":
                 this.a = this.x = this.read(effective_address, "data");
                 this.set_nz(this.a);

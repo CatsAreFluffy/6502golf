@@ -38,6 +38,9 @@ export const modes: AddressingMode[] = [
     imm, inx, imm, inx,  zpg, zpg, zpg, zpg,  imp, imm, imp, imm,  abs, abs, abs, abs,
     rel, iyf, imp, iyf,  zpx, zpx, zpx, zpx,  imp, ayf, imp, ayf,  axf, axf, abx, abx,
 ];
+export const exec_modes = modes.slice();
+// JSR reads its operand weirdly so don't do it as part of the addressing mode
+exec_modes[0x20] = imm;
 
 const assemble_modes: Map<AddressingMode, AssembleAddressingMode> = new Map([
     ["implicit", "implicit"],
