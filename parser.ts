@@ -277,6 +277,9 @@ function parse_label(stream: TokenStream): Label {
     if(label.kind != "identifier") {
         throw new ParseError("Labels must not be symbols", label);
     }
+    if(!stream.eof() && stream.peek().token == ":") {
+        stream.next();
+    }
     return label.token;
 }
 
