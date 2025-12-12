@@ -124,7 +124,7 @@ export default class Machine {
             }
             case "immediate": 
                 effective_address = this.pc;
-                this.pc++;
+                this.pc = (this.pc + 1) & 0xffff;
                 break;
             case "implicit":
                 this.read(this.pc, "dummy");
