@@ -304,6 +304,10 @@ type Command = ({
     length: number,
     value: Expr,
 } | {
+    type: "ds",
+    length: Expr,
+    entry_size: number,
+} | {
     type: "equ",
     label: Label | undefined,
     value: Expr,
@@ -330,6 +334,20 @@ function parse_command(stream: TokenStream): Command {
                 "word": 2,
             };
             command = {type: "dc", length: lengths[name], value: parse_expr(stream)};
+            break;
+        }
+        case "ds.b":
+        case "ds.w":
+        case "res.b":
+        case "res.w": {
+            stream.next();
+            let lengths = {
+                "ds.b": 1,
+                "res.b": 1,
+                "ds.w": 2,
+                "res.w": 2,
+            };
+            command = {type: "ds", entry_size: lengths[name], length: parse_expr(stream)};
             break;
         }
         case "=":

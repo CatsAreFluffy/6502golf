@@ -110,6 +110,10 @@ export default function assemble(program: Program): number[] {
                 })
                 org = (org + command.length) & 0xffff;
                 break;
+            case "ds": {
+                org = (org + eval_expr(command.length, new Map()) * command.entry_size) & 0xffff;
+                break;
+            }
             case "equ": {
                 labels.set(command.label!, command.value);
                 break;
