@@ -248,6 +248,7 @@ function parse_operand(stream: TokenStream): Operand {
         }
         stream.next();
         if(mode == "indirect" && !stream.eof() && stream.peek().token == ",") {
+            stream.next();
             let index = stream.next();
             switch(index.token.toLowerCase()) {
                 case "x":
