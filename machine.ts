@@ -20,6 +20,7 @@ export default class Machine {
 
     cycles: number = 0;
 
+    track_accesses: boolean = true;
     last_accesses: [number, AccessType][] = [];
 
     constructor(memory: number[]) {
@@ -51,7 +52,9 @@ export default class Machine {
 
     read(address: number, access_type: AccessType): number {
         this.cycles++;
-        this.last_accesses.push([address, access_type]);
+        if(this.track_accesses){
+            this.last_accesses.push([address, access_type]);
+        }
         return this.memory[address];
     }
 
@@ -64,7 +67,9 @@ export default class Machine {
     write(address: number, value: number, access_type: AccessType) {
         this.memory[address] = value;
         this.cycles++;
-        this.last_accesses.push([address, access_type]);
+        if(this.track_accesses){
+            this.last_accesses.push([address, access_type]);
+        }
     }
 
     nz_bytes(): number {
