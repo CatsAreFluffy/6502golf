@@ -247,7 +247,7 @@ function parse_operand(stream: TokenStream): Operand {
             throw new ParseError("Unclosed parenthesis", first);
         }
         stream.next();
-        if(mode == "indirect" && !stream.eof() && stream.next().token == ",") {
+        if(mode == "indirect" && !stream.eof() && stream.peek().token == ",") {
             let index = stream.next();
             switch(index.token.toLowerCase()) {
                 case "x":
