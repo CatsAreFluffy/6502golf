@@ -308,11 +308,11 @@ type Command = ({
     value: Expr,
 });
 function parse_command(stream: TokenStream): Command {
-    let name = stream.peek().token;
+    let name = stream.peek().token.toLowerCase();
     const start = stream.position();
     let type = "directive";
     let command: Command;
-    switch(name.toLowerCase()) {
+    switch(name) {
         case "org":
             stream.next();
             command = {type: "org", base: parse_expr(stream)};
