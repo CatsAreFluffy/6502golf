@@ -322,13 +322,13 @@ function parse_command(stream: TokenStream): Command {
         case "byte":
         case "word": {
             stream.next();
-            let lengths = new Map([
-                ["dc.b", 1],
-                ["byte", 1],
-                ["dc.w", 2],
-                ["word", 2],
-            ]);
-            command = {type: "dc", length: lengths.get(name)!, value: parse_expr(stream)};
+            let lengths = {
+                "dc.b": 1,
+                "byte": 1,
+                "dc.w": 2,
+                "word": 2,
+            };
+            command = {type: "dc", length: lengths[name], value: parse_expr(stream)};
             break;
         }
         case "=":
