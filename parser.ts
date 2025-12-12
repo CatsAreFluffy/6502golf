@@ -126,8 +126,14 @@ function parse_short_expr(stream: TokenStream): Expr {
     switch(next.kind) {
         case "identifier": {
             let head: Expr;
-            if(next.token[0] == "$") {
-                let value = parseInt(next.token.slice(1), 16);
+            if(next.token.match(/^\$|0x/i)) {
+                let value = parseInt(next.token.replace(/^\$|0x/i,""), 16);
+                if(isNaN(value)) {
+                    throw new ParseError("Invalid number", next);
+                }
+                return {type: "constant", value, start, end};
+            } else if(next.token.match(/^0b/i)) {
+                let value = parseInt(next.token.replace(/^0b/i,""), 2);
                 if(isNaN(value)) {
                     throw new ParseError("Invalid number", next);
                 }
