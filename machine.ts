@@ -1,25 +1,6 @@
 import { modes, instructions } from "./instructions";
 
-export class MemoryRange {
-    start: number;
-    end: number;
-
-    constructor(start: number, end: number) {
-        this.start = start;
-        this.end = end;
-    }
-
-    includes(value: number): boolean {
-        return +(value >= this.start) + +(value < this.end) + +(this.start > this.end) >= 2;
-    }
-
-    overlaps(other: MemoryRange): boolean {
-        if(this.start == this.end || other.start == other.end) {
-            return false;
-        }
-        return this.includes(other.start) || other.includes(this.start);
-    }
-}
+export type AccessType = "instruction" | "pointer" | "data" | "dummy";
 
 export default class Machine {
     memory: number[];
@@ -39,8 +20,7 @@ export default class Machine {
 
     cycles: number = 0;
 
-    last_instruction: MemoryRange = new MemoryRange(0, 0);
-    last_data: MemoryRange = new MemoryRange(0, 0);
+    last_accesses: Map<number, AccessType> = new Map();
 
     constructor(memory: number[]) {
         this.memory = memory;
@@ -69,20 +49,22 @@ export default class Machine {
         return ret;
     }
 
-    read(address: number): number {
+    read(address: number, access_type: AccessType): number {
         this.cycles++;
+        this.last_accesses.set(address, access_type);
         return this.memory[address];
     }
 
-    read_instruction(): number {
-        let ret = this.read(this.pc);
+    read_instruction(access_type: AccessType = "instruction"): number {
+        let ret = this.read(this.pc, access_type);
         this.pc = (this.pc + 1) & 0xffff;
         return ret;
     }
 
-    write(address: number, value: number) {
+    write(address: number, value: number, access_type: AccessType) {
         this.memory[address] = value;
         this.cycles++;
+        this.last_accesses.set(address, access_type);
     }
 
     nz_bytes(): number {
@@ -99,6 +81,7 @@ export default class Machine {
     }
 
     step() {
+        this.last_accesses = new Map();
         let instruction_start = this.pc;
         let opcode = this.read_instruction();
         let instruction = instructions[opcode];
@@ -121,7 +104,7 @@ export default class Machine {
                     mode == "absolute,x" ||
                     (base_address >> 8) != (effective_address >> 8)
                 ) {
-                    this.read((effective_address - 256) & 0xffff);
+                    this.read((effective_address - 256) & 0xffff, "dummy");
                 }
                 break;
             }
@@ -135,7 +118,7 @@ export default class Machine {
                     mode == "absolute,y" ||
                     (base_address >> 8) != (effective_address >> 8)
                 ) {
-                    this.read((effective_address - 256) & 0xffff);
+                    this.read((effective_address - 256) & 0xffff, "dummy");
                 }
                 break;
             }
@@ -144,38 +127,38 @@ export default class Machine {
                 this.pc++;
                 break;
             case "implicit":
-                this.read(this.pc);
+                this.read(this.pc, "dummy");
                 break;
             case "indirect": {
                 let base_low = this.read_instruction();
                 let base_high = this.read_instruction();
                 let pointer_address = (base_high << 8) | base_low;
-                let low = this.read(pointer_address);
-                let high = this.read((pointer_address + 1) & 0xffff);
+                let low = this.read(pointer_address, "pointer");
+                let high = this.read((pointer_address + 1) & 0xffff, "pointer");
                 effective_address = (high << 8) | low;
                 break;
             }
             case "indirect,x": {
                 let base = this.read_instruction();
-                this.read(base);
+                this.read(base, "dummy");
                 let pointer_address = (base + this.x) & 0xff;
-                let low = this.read(pointer_address);
-                let high = this.read((pointer_address + 1) & 0xff);
+                let low = this.read(pointer_address, "pointer");
+                let high = this.read((pointer_address + 1) & 0xff, "pointer");
                 effective_address = (high << 8) | low;
                 break;
             }
             case "indirect,y":
             case "indirect,y fast": {
                 let pointer_address = this.read_instruction();
-                let low = this.read(pointer_address);
-                let high = this.read((pointer_address + 1) & 0xff);
+                let low = this.read(pointer_address, "pointer");
+                let high = this.read((pointer_address + 1) & 0xff, "pointer");
                 let base_address = (high << 8) | low;
                 effective_address = (base_address + this.y) & 0xffff;
                 if(
                     mode == "indirect,y" ||
                     (base_address >> 8) != (effective_address >> 8)
                 ) {
-                    this.read((effective_address - 256) & 0xffff);
+                    this.read((effective_address - 256) & 0xffff, "dummy");
                 }
                 break;
             }
@@ -192,33 +175,27 @@ export default class Machine {
                 break;
             case "zeropage,x": {
                 let base_address = this.read_instruction();
-                this.read(base_address);
+                this.read(base_address, "dummy");
                 effective_address = (base_address + this.x) & 0xff;
                 break;
             }
             case "zeropage,y": {
                 let base_address = this.read_instruction();
-                this.read(base_address);
+                this.read(base_address, "dummy");
                 effective_address = (base_address + this.y) & 0xff;
                 break;
             }
             default:
                 throw new Error(`Unknown addressing mode ${mode}`);
         }
-        if(mode == "immediate" || mode == "implicit" || mode == "relative" || instruction == "jmp") {
-            this.last_data = new MemoryRange(0, 0);
-        } else {
-            this.last_data = new MemoryRange(effective_address, (effective_address + 1) & 0xffff);
-        }
-        let is_jump = false;
         switch(instruction) {
             case "and":
-                this.a &= this.read(effective_address);
+                this.a &= this.read(effective_address, "data");
                 this.set_nz(this.a);
                 break;
             case "adc":
             case "sbc": {
-                let value = this.read(effective_address);
+                let value = this.read(effective_address, "data");
                 let value2 = instruction == "sbc" ? value ^ 0xff : value;
                 let dec_result = this.a + value2 + +this.c;
                 if(this.d) {
@@ -269,12 +246,12 @@ export default class Machine {
             }
             case "asl":
             case "rol": {
-                let value = this.read(effective_address);
-                this.write(effective_address, value);
+                let value = this.read(effective_address, "data");
+                this.write(effective_address, value, "dummy");
                 let cin = this.c && instruction == "rol";
                 let shifted = value << 1 | +cin;
                 let result = shifted & 0xff;
-                this.write(effective_address, result);
+                this.write(effective_address, result, "data");
                 this.set_nz(result);
                 this.c = (shifted >> 8) > 0;
                 break;
@@ -287,8 +264,6 @@ export default class Machine {
             case "bpl":
             case "bvc":
             case "bvs": {
-                is_jump = true;
-                this.last_instruction = new MemoryRange(instruction_start, this.pc);
                 let conditions = {
                     bcc: !this.c,
                     bcs: this.c,
@@ -300,25 +275,25 @@ export default class Machine {
                     bvc: !this.v,
                 };
                 if(conditions[instruction]) {
-                    this.read_instruction();
+                    this.read_instruction("dummy");
                     if((effective_address >> 8) != (this.pc >> 8)) {
-                        this.read((this.pc & 0xff00) | (effective_address & 0xff));
+                        this.read((this.pc & 0xff00) | (effective_address & 0xff), "dummy");
                     }
                     this.pc = effective_address;
                 }
                 break;
             }
             case "bit": {
-                let value = this.read(effective_address);
+                let value = this.read(effective_address, "data");
                 this.n = value >= 128;
                 this.v = ((value >> 6) & 1) == 1;
                 this.z = (this.a & value) == 0;
                 break;
             }
             case "brk": {
-                this.write(0x100 + this.s, this.pc >> 8);
+                this.write(0x100 + this.s, this.pc >> 8, "data");
                 this.s = (this.s - 1) & 0xff;
-                this.write(0x100 + this.s, this.pc & 0xff);
+                this.write(0x100 + this.s, this.pc & 0xff, "data");
                 this.s = (this.s - 1) & 0xff;
                 let flags = 0x30;
                 flags |= +this.c;
@@ -327,12 +302,10 @@ export default class Machine {
                 flags |= +this.d << 3;
                 flags |= +this.v << 6;
                 flags |= +this.n << 7;
-                this.write(0x100 + this.s, flags);
+                this.write(0x100 + this.s, flags, "data");
                 this.s = (this.s - 1) & 0xff;
-                let pc_low = this.read(0xfffe);
-                let pc_high = this.read(0xffff);
-                is_jump = true;
-                this.last_instruction = new MemoryRange(instruction_start, this.pc);
+                let pc_low = this.read(0xfffe, "data");
+                let pc_high = this.read(0xffff, "data");
                 this.pc = (pc_high << 8) | pc_low;
                 this.i = true;
                 break;
@@ -367,16 +340,16 @@ export default class Machine {
                         base = this.y;
                         break;
                 }
-                let result = base - this.read(effective_address);
+                let result = base - this.read(effective_address, "data");
                 this.set_nz(result & 0xff);
                 this.c = (result & 0x100) == 0;
                 break;
             }
             case "dec": {
-                let value = this.read(effective_address);
-                this.write(effective_address, value);
+                let value = this.read(effective_address, "data");
+                this.write(effective_address, value, "dummy");
                 let result = (value - 1) & 0xff;
-                this.write(effective_address, result);
+                this.write(effective_address, result, "data");
                 this.set_nz(result);
                 break;
             }
@@ -389,14 +362,14 @@ export default class Machine {
                 this.set_nz(this.y);
                 break;
             case "eor":
-                this.a ^= this.read(effective_address);
+                this.a ^= this.read(effective_address, "data");
                 this.set_nz(this.a);
                 break;
             case "inc": {
-                let value = this.read(effective_address);
-                this.write(effective_address, value);
+                let value = this.read(effective_address, "data");
+                this.write(effective_address, value, "dummy");
                 let result = (value + 1) & 0xff;
-                this.write(effective_address, result);
+                this.write(effective_address, result, "data");
                 this.set_nz(result);
                 break;
             }
@@ -409,43 +382,39 @@ export default class Machine {
                 this.set_nz(this.y);
                 break;
             case "jmp":
-                is_jump = true;
-                this.last_instruction = new MemoryRange(instruction_start, this.pc);
                 this.pc = effective_address;
                 break;
             case "jsr":
-                this.read(0x100 + this.s);
-                this.write(0x100 + this.s, ((this.pc - 1) >> 8) & 0xff);
+                this.read(0x100 + this.s, "dummy");
+                this.write(0x100 + this.s, ((this.pc - 1) >> 8) & 0xff, "data");
                 this.s = (this.s - 1) & 0xff;
-                this.write(0x100 + this.s, (this.pc - 1) & 0xff);
+                this.write(0x100 + this.s, (this.pc - 1) & 0xff, "data");
                 this.s = (this.s - 1) & 0xff;
-                is_jump = true;
-                this.last_instruction = new MemoryRange(instruction_start, this.pc);
                 this.pc = effective_address;
                 break;
             case "lax":
-                this.a = this.x = this.read(effective_address);
+                this.a = this.x = this.read(effective_address, "data");
                 this.set_nz(this.a);
                 break;
             case "lda":
-                this.a = this.read(effective_address);
+                this.a = this.read(effective_address, "data");
                 this.set_nz(this.a);
                 break;
             case "ldx":
-                this.x = this.read(effective_address);
+                this.x = this.read(effective_address, "data");
                 this.set_nz(this.x);
                 break;
             case "ldy":
-                this.y = this.read(effective_address);
+                this.y = this.read(effective_address, "data");
                 this.set_nz(this.y);
                 break;
             case "lsr":
             case "ror": {
-                let value = this.read(effective_address);
-                this.write(effective_address, value);
+                let value = this.read(effective_address, "data");
+                this.write(effective_address, value, "dummy");
                 let cin = this.c && instruction == "ror";
                 let result = (+cin << 8 | value) >> 1;
-                this.write(effective_address, result);
+                this.write(effective_address, result, "data");
                 this.set_nz(result);
                 this.c = (value & 1) > 0;
                 break;
@@ -459,16 +428,16 @@ export default class Machine {
                 break;
             }
             case "nop":
-                this.read(effective_address);
+                this.read(effective_address, mode == "immediate" ? "instruction" : "dummy");
                 break;
             case "nopa":
                 break;
             case "ora":
-                this.a |= this.read(effective_address);
+                this.a |= this.read(effective_address, "data");
                 this.set_nz(this.a);
                 break;
             case "pha":
-                this.write(0x100 + this.s, this.a);
+                this.write(0x100 + this.s, this.a, "data");
                 this.s = (this.s - 1) & 0xff;
                 break;
             case "php": {
@@ -479,19 +448,19 @@ export default class Machine {
                 flags |= +this.d << 3;
                 flags |= +this.v << 6;
                 flags |= +this.n << 7;
-                this.write(0x100 + this.s, flags);
+                this.write(0x100 + this.s, flags, "data");
                 this.s = (this.s - 1) & 0xff;
                 break;
             }
             case "pla":
-                this.read(0x100 + this.s);
+                this.read(0x100 + this.s, "dummy");
                 this.s = (this.s + 1) & 0xff;
-                this.a = this.read(0x100 + this.s);
+                this.a = this.read(0x100 + this.s, "data");
                 break;
             case "plp": {
-                this.read(0x100 + this.s);
+                this.read(0x100 + this.s, "dummy");
                 this.s = (this.s + 1) & 0xff;
-                let flags = this.read(0x100 + this.s);
+                let flags = this.read(0x100 + this.s, "data");
                 this.c = (flags & 0x01) > 0;
                 this.z = (flags & 0x02) > 0;
                 this.i = (flags & 0x04) > 0;
@@ -501,9 +470,9 @@ export default class Machine {
                 break;
             }
             case "rti": {
-                this.read(0x100 + this.s);
+                this.read(0x100 + this.s, "dummy");
                 this.s = (this.s + 1) & 0xff;
-                let flags = this.read(0x100 + this.s);
+                let flags = this.read(0x100 + this.s, "data");
                 this.c = (flags & 0x01) > 0;
                 this.z = (flags & 0x02) > 0;
                 this.i = (flags & 0x04) > 0;
@@ -511,31 +480,27 @@ export default class Machine {
                 this.v = (flags & 0x40) > 0;
                 this.n = (flags & 0x80) > 0;
                 this.s = (this.s + 1) & 0xff;
-                let pc_low = this.read(0x100 + this.s);
+                let pc_low = this.read(0x100 + this.s, "data");
                 this.s = (this.s + 1) & 0xff;
-                let pc_high = this.read(0x100 + this.s);
+                let pc_high = this.read(0x100 + this.s, "data");
                 this.s = (this.s + 1) & 0xff;
-                is_jump = true;
-                this.last_instruction = new MemoryRange(instruction_start, this.pc);
                 this.pc = (pc_high << 8) | pc_low;
                 break;
             }
             case "rts": {
-                this.read(0x100 + this.s);
+                this.read(0x100 + this.s, "dummy");
                 this.s = (this.s + 1) & 0xff;
-                let pc_low = this.read(0x100 + this.s);
+                let pc_low = this.read(0x100 + this.s, "data");
                 this.s = (this.s + 1) & 0xff;
-                let pc_high = this.read(0x100 + this.s);
+                let pc_high = this.read(0x100 + this.s, "data");
                 this.s = (this.s + 1) & 0xff;
-                is_jump = true;
-                this.last_instruction = new MemoryRange(instruction_start, this.pc);
                 this.pc = (pc_high << 8) | pc_low;
                 this.read_instruction();
                 break;
             }
             case "sbx": {
                 let ax = this.a & this.x;
-                let value = this.read(effective_address);
+                let value = this.read(effective_address, "data");
                 let result = ax + (value ^ 0xff) + 1;
                 this.x = result & 0xff;
                 this.set_nz(this.x);
@@ -543,13 +508,13 @@ export default class Machine {
                 break;
             }
             case "sta":
-                this.write(effective_address, this.a);
+                this.write(effective_address, this.a, "data");
                 break;
             case "stx":
-                this.write(effective_address, this.x);
+                this.write(effective_address, this.x, "data");
                 break;
             case "sty":
-                this.write(effective_address, this.y);
+                this.write(effective_address, this.y, "data");
                 break;
             case "tax":
                 this.x = this.a;
@@ -576,10 +541,6 @@ export default class Machine {
                 break;
             default:
                 throw new Error(`Unknown instruction ${instruction} (address ${instruction_start.toString(16).padStart(4, "0")})`);
-        }
-        if(!is_jump) {
-            let instruction_end = this.pc;
-            this.last_instruction = new MemoryRange(instruction_start, instruction_end);
         }
     }
 }

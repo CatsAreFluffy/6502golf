@@ -1,6 +1,6 @@
 import React from "react";
 
-import Machine, { MemoryRange } from "./machine";
+import Machine from "./machine";
 import MemoryView from "./memory_view";
 import { RangeContext } from "./range_context";
 
@@ -24,7 +24,7 @@ export default function MachineView({ machine: m }: {machine: Machine}) {
             Cycles: {m.cycles} <br />
             PC: {hex(m.pc, 4)} A: {hex(m.a)} X: {hex(m.x)} Y: {hex(m.y)} S: {hex(m.s)} P: {names2}
             <br />
-            <RangeContext value={[m.last_instruction, m.last_data]}>
+            <RangeContext value={m.last_accesses}>
                 <MemoryView memory={m.memory} />
             </RangeContext>
         </div>

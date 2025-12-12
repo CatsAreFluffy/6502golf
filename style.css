@@ -37,6 +37,14 @@
     background-color: cornflowerblue;
 }
 
+.last-pointer {
+    background-color: rgb(127, 234, 129);
+}
+
+.last-dummy {
+    background-color: darkgray;
+}
+
 .error {
     background-color: red;
 }
