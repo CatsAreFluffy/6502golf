@@ -211,7 +211,7 @@ function parse_operand(stream: TokenStream): Operand {
         let comma = stream.next();
         if(mode == "absolute") {
             let index = stream.next();
-            switch(index.token) {
+            switch(index.token.toLowerCase()) {
                 case "x":
                     mode = "absolute,x";
                     break;
@@ -223,7 +223,7 @@ function parse_operand(stream: TokenStream): Operand {
             }
         } else if(mode == "indirect") {
             let index = stream.next();
-            switch(index.token) {
+            switch(index.token.toLowerCase()) {
                 case "x":
                     mode = "indirect,x";
                     break;
@@ -243,7 +243,7 @@ function parse_operand(stream: TokenStream): Operand {
         stream.next();
         if(mode == "indirect" && !stream.eof() && stream.next().token == ",") {
             let index = stream.next();
-            switch(index.token) {
+            switch(index.token.toLowerCase()) {
                 case "x":
                     throw new ParseError("Indirect-indexed addressing can only use the y register", index);
                 case "y":
@@ -268,7 +268,7 @@ function parse_instruction(stream: TokenStream): Instruction {
     if(instruction.kind != "identifier") {
         throw new ParseError("Instructions must not be symbols", instruction);
     }
-    return {instruction: instruction.token, operand: parse_operand(stream), start: instruction.position, end: stream.position()};
+    return {instruction: instruction.token.toLowerCase(), operand: parse_operand(stream), start: instruction.position, end: stream.position()};
 }
 
 type Label = string;
@@ -303,7 +303,7 @@ function parse_command(stream: TokenStream): Command {
     const start = stream.position();
     let type = "directive";
     let command: Command;
-    switch(name) {
+    switch(name.toLowerCase()) {
         case "org":
             stream.next();
             command = {type: "org", base: parse_expr(stream)};
