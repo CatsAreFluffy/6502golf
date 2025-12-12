@@ -20,7 +20,7 @@ export default class Machine {
 
     cycles: number = 0;
 
-    last_accesses: Map<number, AccessType> = new Map();
+    last_accesses: [number, AccessType][] = [];
 
     constructor(memory: number[]) {
         this.memory = memory;
@@ -51,7 +51,7 @@ export default class Machine {
 
     read(address: number, access_type: AccessType): number {
         this.cycles++;
-        this.last_accesses.set(address, access_type);
+        this.last_accesses.push([address, access_type]);
         return this.memory[address];
     }
 
@@ -64,7 +64,7 @@ export default class Machine {
     write(address: number, value: number, access_type: AccessType) {
         this.memory[address] = value;
         this.cycles++;
-        this.last_accesses.set(address, access_type);
+        this.last_accesses.push([address, access_type]);
     }
 
     nz_bytes(): number {
@@ -74,6 +74,10 @@ export default class Machine {
         }
         return bytes;
     }
+
+    last_access_map(): Map<number, AccessType> {
+        return new Map(this.last_accesses);
+    }
     
     set_nz(value: number) {
         this.z = value == 0;
@@ -81,7 +85,7 @@ export default class Machine {
     }
 
     step() {
-        this.last_accesses = new Map();
+        this.last_accesses = [];
         let instruction_start = this.pc;
         let opcode = this.read_instruction();
         let instruction = instructions[opcode];

@@ -24,7 +24,7 @@ export default function MachineView({ machine: m }: {machine: Machine}) {
             Cycles: {m.cycles} <br />
             PC: {hex(m.pc, 4)} A: {hex(m.a)} X: {hex(m.x)} Y: {hex(m.y)} S: {hex(m.s)} P: {names2}
             <br />
-            <RangeContext value={m.last_accesses}>
+            <RangeContext value={m.last_access_map()}>
                 <MemoryView memory={m.memory} />
             </RangeContext>
         </div>
