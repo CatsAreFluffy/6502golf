@@ -4,8 +4,6 @@ const host = "localhost";
 const port: number = 8000;
 
 const requestListener = function(req: http.IncomingMessage, res: http.ServerResponse){
-    // res.writeHead(200);
-    // res.end("My first server?");
     console.log(req.url);
     switch(req.url) {
         case "/":
@@ -42,6 +40,19 @@ const requestListener = function(req: http.IncomingMessage, res: http.ServerResp
                 res.end(data);
             })
             break;
+        case "/submit": {
+            let body = "";
+
+            req.on("data", chunk => {
+                body += chunk.toString();
+            })
+            req.on("end", () => {
+                console.log(body);
+                res.writeHead(200);
+                res.end();
+            });
+            break;
+        }
         default:
             res.writeHead(404);
             res.end();

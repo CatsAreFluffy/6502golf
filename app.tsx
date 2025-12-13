@@ -154,6 +154,11 @@ function App() {
         }
     }
 
+    const handleSubmit = async () => {
+        let x = await fetch("/submit", {method: "POST", body: machine.serialize_memory()});
+        console.log(x);
+    }
+
     return (
         <div className="app">
             <h1>6502 Golf</h1>
@@ -165,6 +170,7 @@ function App() {
             <button onClick={handleRunToJump}>Run until backwards jump</button>
             <button onClick={handleRunToBrk}>Run until BRK</button>
             <button onClick={handleRunToEnd}>Run until end</button>
+            <button onClick={handleSubmit}>Submit</button>
             <MachineView machine={machine} />
             Current output:
             <OutputView data={machine.memory.slice(0x8000)} />

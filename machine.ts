@@ -30,6 +30,34 @@ export default class Machine {
         this.pc = (memory[0xfffd] << 8) | memory[0xfffc];
     }
 
+    serialize_memory(): string {
+        let ret: any = {};
+        for(let i = 0; i < 65536; i += 256) {
+            let nonempty = false;
+            for(let j = 0; j < 256; j++) {
+                if(this.memory[i + j]) {
+                    nonempty = true;
+                    break;
+                }
+            }
+            if(nonempty) {
+                ret[i] = this.memory.slice(i, i + 256);
+            }
+        }
+        return JSON.stringify(ret);
+    }
+
+    static deserialize(data: string): Machine {
+        let memory = JSON.parse(data);
+        let mem_array = new Array(65536).fill(0);
+        for(let i of Object.keys(memory)) {
+            for(let j = 0; j < 256; j++) {
+                mem_array[(+i) + j] = memory[i][j];
+            }
+        }
+        return new Machine(mem_array);
+    }
+
     clone(): Machine {
         let ret = new Machine(this.memory.slice());
         
