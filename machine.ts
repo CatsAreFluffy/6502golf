@@ -30,7 +30,7 @@ export default class Machine {
         this.pc = (memory[0xfffd] << 8) | memory[0xfffc];
     }
 
-    serialize_memory(): string {
+    serialize_memory(): any {
         let ret: any = {};
         for(let i = 0; i < 65536; i += 256) {
             let nonempty = false;
@@ -44,18 +44,25 @@ export default class Machine {
                 ret[i] = this.memory.slice(i, i + 256);
             }
         }
-        return JSON.stringify(ret);
+        return ret;
     }
 
-    static deserialize(data: string): Machine {
-        let memory = JSON.parse(data);
-        let mem_array = new Array(65536).fill(0);
-        for(let i of Object.keys(memory)) {
+    static deserialize(data: any): Machine {
+        let memory = new Array(65536).fill(0);
+        for(let i of Object.keys(data)) {
             for(let j = 0; j < 256; j++) {
-                mem_array[(+i) + j] = memory[i][j];
+                let index = ((+i) + j) | 0;
+                if(index < 0 || index >= 65536) {
+                    throw new Error("Memory address out of range");
+                }
+                let value = data[i][j] | 0;
+                if(value < 0 || value >= 256) {
+                    throw new Error("Memory value out of range");
+                }
+                memory[index] = value;
             }
         }
-        return new Machine(mem_array);
+        return new Machine(memory);
     }
 
     clone(): Machine {

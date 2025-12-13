@@ -10,6 +10,7 @@ import { jams } from "./instructions.ts";
 import challenges from "./challenges.ts";
 import OutputView from "./output_view.tsx";
 import { judge } from "./judge.ts";
+import { SubmitRequest, SubmitResponse } from "./api_types.ts";
 
 const default_code = `
 `.replace(/^\n|\n$/g,"");
@@ -142,9 +143,28 @@ function App() {
         }
     }
 
+    let [submit_judgment, setSubmitJudgment] = useState(() => "");
+
     const handleSubmit = async () => {
-        let x = await fetch("/submit", {method: "POST", body: machine.serialize_memory()});
-        console.log(x);
+        setSubmitJudgment("...");
+        let memory = base_machine.serialize_memory();
+        let request: SubmitRequest = {challenge_name, memory};
+        let response = await fetch("/submit",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(request),
+            }
+        );
+        let body: SubmitResponse = await response.json();
+        let {pass, message} = body;
+        if(pass) {
+            setSubmitJudgment(`Passed!`);
+        } else {
+            setSubmitJudgment(`Failed (${message})`);
+        }
     }
 
     return (
@@ -158,7 +178,7 @@ function App() {
             <button onClick={handleRunToJump}>Run until backwards jump</button>
             <button onClick={handleRunToBrk}>Run until BRK</button>
             <button onClick={handleRunToEnd}>Run until end</button>
-            <button onClick={handleSubmit}>Submit</button>
+            <button onClick={handleSubmit}>Submit</button> {submit_judgment}
             <MachineView machine={machine} />
             Current output:
             <OutputView data={machine.memory.slice(0x8000)} />

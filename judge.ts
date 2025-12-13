@@ -1,5 +1,5 @@
-import { Challenge } from "./challenges";
-import Machine from "./machine";
+import { Challenge } from "./challenges.ts";
+import Machine from "./machine.ts";
 
 export function judge(machine: Machine, challenge: Challenge) {
     const output = machine.memory.slice(0x8000);
