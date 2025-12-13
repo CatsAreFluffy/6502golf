@@ -132,6 +132,12 @@ function parse_short_expr(stream: TokenStream): Expr {
                     throw new ParseError("Invalid number", next);
                 }
                 return {type: "constant", value, start, end};
+            } else if(next.token.match(/^0o/i)) {
+                let value = parseInt(next.token.replace(/^0o/i,""), 8);
+                if(isNaN(value)) {
+                    throw new ParseError("Invalid number", next);
+                }
+                return {type: "constant", value, start, end};
             } else if(next.token.match(/^0b/i)) {
                 let value = parseInt(next.token.replace(/^0b/i,""), 2);
                 if(isNaN(value)) {
