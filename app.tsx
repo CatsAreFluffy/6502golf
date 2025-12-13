@@ -56,16 +56,16 @@ function App() {
         challenge_buttons.push(<button key={challenge} onClick={handleSelectChallenge(challenge)}>{challenge}</button>);
     }
 
-    const [machine, setMachine] = useState(
+    const [baseMachine, setBaseMachine] = useState(
         () => {
             let [machine, error_state] = assemble_source(code);
             return machine ?? new Machine(new Array(65536).fill(0));
         }
     );
 
-    const [bytes, setBytes] = useState(
-        () => machine.nz_bytes()
-    );
+    const bytes = useMemo(() => baseMachine.nz_bytes(), [baseMachine]);
+
+    const [machine, setMachine] = useState(() => baseMachine);
 
     const [judgment, setJudgment] = useState(() => "");
 
@@ -73,8 +73,8 @@ function App() {
         localStorage.setItem("6502_golf_code", val);
         let [machine, error_state] = assemble_source(val);
         if(machine) {
+            setBaseMachine(machine);
             setMachine(machine);
-            setBytes(machine.nz_bytes());
             setJudgment("");
         }
         viewUpdate.view.dispatch({
