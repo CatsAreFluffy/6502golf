@@ -57,16 +57,16 @@ function App() {
         challenge_buttons.push(<button key={challenge} onClick={handleSelectChallenge(challenge)}>{challenge}</button>);
     }
 
-    const [baseMachine, setBaseMachine] = useState(
+    const [base_machine, setBaseMachine] = useState(
         () => {
             let [machine, error_state] = assemble_source(code);
             return machine ?? new Machine(new Array(65536).fill(0));
         }
     );
 
-    const bytes = useMemo(() => baseMachine.nz_bytes(), [baseMachine]);
+    const bytes = useMemo(() => base_machine.nz_bytes(), [base_machine]);
 
-    const [machine, setMachine] = useState(() => baseMachine);
+    const [machine, setMachine] = useState(() => base_machine);
 
     const [judgment, setJudgment] = useState(() => "");
 
