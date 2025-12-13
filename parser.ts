@@ -1,4 +1,4 @@
-import { ParseAddressingMode } from "./instructions";
+import { ParseAddressingMode } from "./instructions.ts";
 
 type Token = {
     token: string,

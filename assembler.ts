@@ -1,5 +1,5 @@
-import { Operand, Command, Program, Expr, LocatedError } from "./parser";
-import { AssembleInstruction, ParseAddressingMode, AssembleAddressingMode, encodings } from "./instructions";
+import { Operand, Command, Program, Expr, LocatedError } from "./parser.ts";
+import { AssembleInstruction, ParseAddressingMode, AssembleAddressingMode, encodings } from "./instructions.ts";
 
 type Relocation = {
     address: number,

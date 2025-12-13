@@ -1,14 +1,14 @@
 import React, { useMemo, useState } from "react";
 import ReactCodeMirror, { ViewUpdate } from "@uiw/react-codemirror";
 
-import { lex, LocatedError, parse } from "./parser";
-import assemble from "./assembler";
-import Machine from "./machine";
-import MachineView from "./machine_view";
-import { error_extension, error_field, set_error_field } from "./extension";
-import { jams } from "./instructions";
-import challenges from "./challenges";
-import OutputView from "./output_view";
+import { lex, LocatedError, parse } from "./parser.ts";
+import assemble from "./assembler.ts";
+import Machine from "./machine.ts";
+import MachineView from "./machine_view.tsx";
+import { error_extension, error_field, set_error_field } from "./extension.ts";
+import { jams } from "./instructions.ts";
+import challenges from "./challenges.ts";
+import OutputView from "./output_view.tsx";
 
 const default_code = `
 `.replace(/^\n|\n$/g,"");

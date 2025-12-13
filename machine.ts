@@ -1,4 +1,4 @@
-import { exec_modes, instructions } from "./instructions";
+import { exec_modes, instructions } from "./instructions.ts";
 
 export type AccessType = "instruction" | "pointer" | "data" | "dummy";
 

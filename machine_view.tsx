@@ -1,8 +1,8 @@
 import React from "react";
 
-import Machine from "./machine";
-import MemoryView from "./memory_view";
-import { RangeContext } from "./range_context";
+import Machine from "./machine.ts";
+import MemoryView from "./memory_view.tsx";
+import { RangeContext } from "./range_context.ts";
 
 function hex(value: number, length: number = 2): String {
     return value.toString(16).padStart(length, "0");

@@ -1,6 +1,6 @@
 import React, { ReactElement, useContext } from "react";
-import { AccessType } from "./machine";
-import { RangeContext } from "./range_context";
+import { AccessType } from "./machine.ts";
+import { RangeContext } from "./range_context.ts";
 
 function MemoryLine({ memory, index, length }: {memory: number[], index: number, length: number}): ReactElement {
     const last_accesses = useContext(RangeContext);
