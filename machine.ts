@@ -47,6 +47,9 @@ export default class Machine {
 
         ret.cycles = this.cycles;
 
+        ret.track_accesses = this.track_accesses;
+        ret.last_accesses = this.last_accesses.slice();
+
         return ret;
     }
 
