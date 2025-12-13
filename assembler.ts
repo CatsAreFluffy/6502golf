@@ -178,10 +178,11 @@ export default function assemble(program: Program): number[] {
             value = (value - instruction_address) & 0xffff;
             if(value < 0xff80 && value >= 128) {
                 console.log(value);
-                throw new LocatedError("Branch target too far", expr.start, expr.end);
+                const value2 = value >= 0x8000 ? value - 0x10000 : value;
+                throw new LocatedError(`Branch target too far (offset ${value2})`, expr.start, expr.end);
             }
         } else if(length < 2 && (value < -256 || value >= 256)) {
-            throw new LocatedError("Value too large", expr.start, expr.end);
+            throw new LocatedError(`Value too large (${value})`, expr.start, expr.end);
         }
         for(let i = 0; i < length; i++) {
             ret[(address + i) & 0xffff] = value & 0xff;
