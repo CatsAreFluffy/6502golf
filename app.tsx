@@ -9,6 +9,7 @@ import { error_extension, error_field, set_error_field } from "./extension.ts";
 import { jams } from "./instructions.ts";
 import challenges from "./challenges.ts";
 import OutputView from "./output_view.tsx";
+import { judge } from "./judge.ts";
 
 const default_code = `
 `.replace(/^\n|\n$/g,"");
@@ -124,13 +125,7 @@ function App() {
     const handleRunToEnd = () => {
         let new_machine = machine.clone();
         let now = Date.now();
-        for(let i = 0; i < 100000000; i++) {
-            let opcode = new_machine.memory[new_machine.pc]
-            if(jams[opcode]) {
-                break;
-            }
-            new_machine.step();
-        }
+        new_machine.run_until_jam(1 << 30);
         let millis = Date.now() - now;
         if(new_machine.instructions > machine.instructions) {
             console.log("One step takes", (millis*1e6/(new_machine.instructions - machine.instructions)).toFixed(2), "ns");
@@ -138,14 +133,7 @@ function App() {
         }
         setMachine(new_machine);
         if(jams[new_machine.memory[new_machine.pc]]) {
-            let pass = true;
-            for(let j = 0; j < expected_output_bytes.length; j++) {
-                if(new_machine.memory[0x8000 + j] != expected_output_bytes[j]) {
-                    console.log(j, new_machine.memory[0x8000 + j], expected_output_bytes[j]);
-                    pass = false;
-                    break;
-                }
-            }
+            let pass = judge(new_machine, current_challenge);
             if(pass) {
                 setJudgment(` (passed in ${new_machine.cycles} cycles)`);
             } else {

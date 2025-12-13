@@ -1,4 +1,4 @@
-import { exec_modes, instructions } from "./instructions.ts";
+import { exec_modes, instructions, jams } from "./instructions.ts";
 
 export type AccessType = "instruction" | "pointer" | "data" | "dummy";
 
@@ -587,6 +587,19 @@ export default class Machine {
                 break;
             default:
                 throw new Error(`Unknown instruction ${instruction} (address ${instruction_start.toString(16).padStart(4, "0")})`);
+        }
+    }
+
+    run_until_jam(max_cycles?: number) {
+        let cycle_cap = 1e300;
+        if(max_cycles !== undefined) {
+            cycle_cap = this.cycles + max_cycles;
+        }
+        while(!jams[this.memory[this.pc]]) {
+            this.step();
+            if(this.cycles >= cycle_cap) {
+                return;
+            }
         }
     }
 }
