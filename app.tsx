@@ -101,8 +101,7 @@ function App() {
     const handleRunToBrk = () => {
         let new_machine = machine.clone();
         let now = Date.now();
-        let i = 0;
-        for(; i < 1000000; i++) {
+        for(let i = 0; i < 1000000; i++) {
             let opcode = new_machine.memory[new_machine.pc]
             if(!opcode || jams[opcode]) {
                 break;
@@ -110,8 +109,8 @@ function App() {
             new_machine.step();
         }
         let millis = Date.now() - now;
-        if(i > 0) {
-            console.log("One step takes", (millis*1e6/i).toFixed(2), "ns");
+        if(new_machine.instructions > machine.instructions) {
+            console.log("One step takes", (millis*1e6/(new_machine.instructions - machine.instructions)).toFixed(2), "ns");
             console.log("One cycle takes", (millis*1e6/(new_machine.cycles - machine.cycles)).toFixed(2), "ns");
         }
         if(!new_machine.memory[new_machine.pc]) {
@@ -125,8 +124,7 @@ function App() {
     const handleRunToEnd = () => {
         let new_machine = machine.clone();
         let now = Date.now();
-        let i = 0;
-        for(; i < 100000000; i++) {
+        for(let i = 0; i < 100000000; i++) {
             let opcode = new_machine.memory[new_machine.pc]
             if(jams[opcode]) {
                 break;
@@ -134,8 +132,8 @@ function App() {
             new_machine.step();
         }
         let millis = Date.now() - now;
-        if(i > 0) {
-            console.log("One step takes", (millis*1e6/i).toFixed(2), "ns");
+        if(new_machine.instructions > machine.instructions) {
+            console.log("One step takes", (millis*1e6/(new_machine.instructions - machine.instructions)).toFixed(2), "ns");
             console.log("One cycle takes", (millis*1e6/(new_machine.cycles - machine.cycles)).toFixed(2), "ns");
         }
         setMachine(new_machine);

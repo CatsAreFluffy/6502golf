@@ -19,6 +19,7 @@ export default class Machine {
     i: boolean = true;
 
     cycles: number = 0;
+    instructions: number = 0;
 
     track_accesses: boolean = true;
     last_accesses: [number, AccessType][] = [];
@@ -46,6 +47,7 @@ export default class Machine {
         ret.i = this.i;
 
         ret.cycles = this.cycles;
+        ret.instructions = this.instructions;
 
         ret.track_accesses = this.track_accesses;
         ret.last_accesses = this.last_accesses.slice();
@@ -94,6 +96,7 @@ export default class Machine {
 
     step() {
         this.last_accesses = [];
+        this.instructions++;
         let instruction_start = this.pc;
         let opcode = this.read_instruction();
         let instruction = instructions[opcode];
