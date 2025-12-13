@@ -159,7 +159,7 @@ function App() {
             <h1>6502 Golf</h1>
             <div>Challenges: {challenge_buttons}</div>
             <b>{challenge_name}</b>: {current_challenge.description}<br />
-            {bytes} bytes{judgment}
+            {bytes} byte{bytes == 1?"":"s"}{judgment}
             <ReactCodeMirror className="editor" value={code} onChange={handleChange} extensions={[error_field, error_extension]}/>
             <button onClick={handleStep}>Step</button>
             <button onClick={handleRunToJump}>Run until backwards jump</button>
