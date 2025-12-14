@@ -158,7 +158,7 @@ export default class Machine {
                     mode == "absolute,x" ||
                     (base_address >> 8) != (effective_address >> 8)
                 ) {
-                    this.read((effective_address - 256) & 0xffff, "dummy");
+                    this.read((base_address & 0xff00) + (effective_address & 0x00ff), "dummy");
                 }
                 break;
             }
@@ -172,7 +172,7 @@ export default class Machine {
                     mode == "absolute,y" ||
                     (base_address >> 8) != (effective_address >> 8)
                 ) {
-                    this.read((effective_address - 256) & 0xffff, "dummy");
+                    this.read((base_address & 0xff00) + (effective_address & 0x00ff), "dummy");
                 }
                 break;
             }
@@ -212,7 +212,7 @@ export default class Machine {
                     mode == "indirect,y" ||
                     (base_address >> 8) != (effective_address >> 8)
                 ) {
-                    this.read((effective_address - 256) & 0xffff, "dummy");
+                    this.read((base_address & 0xff00) + (effective_address & 0x00ff), "dummy");
                 }
                 break;
             }
