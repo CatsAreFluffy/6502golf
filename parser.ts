@@ -202,12 +202,13 @@ function parse_expr(stream: TokenStream): Expr {
     return head;
 }
 
-type Operand = {mode: ParseAddressingMode, body: Expr};
+type Operand = {mode: ParseAddressingMode, body: Expr, start: number, end: number};
 function parse_operand(stream: TokenStream): Operand {
     if(stream.eof() || stream.peek().kind == "newline") {
         const pos = stream.position();
-        return {mode: "implicit", body: {type: "constant", value: 0, start: pos, end: pos}};
+        return {mode: "implicit", body: {type: "constant", value: 0, start: pos, end: pos}, start: pos, end: pos};
     }
+    const start = stream.position();
     let mode: ParseAddressingMode = "absolute";
     let indirect = false;
     let first = stream.peek();
@@ -267,7 +268,7 @@ function parse_operand(stream: TokenStream): Operand {
             }
         }
     }
-    return {mode, body};
+    return {mode, body, start, end: stream.position()};
 }
 
 type Instruction = {
@@ -284,8 +285,13 @@ function parse_instruction(stream: TokenStream): Instruction {
     return {instruction: instruction.token.toLowerCase(), operand: parse_operand(stream), start: instruction.position, end: stream.position()};
 }
 
-type Label = string;
+type Label = {
+    name: string,
+    start: number,
+    end: number
+};
 function parse_label(stream: TokenStream): Label {
+    const start = stream.position();
     let label = stream.next();
     if(label.kind != "identifier") {
         throw new ParseError("Labels must not be symbols", label);
@@ -293,7 +299,7 @@ function parse_label(stream: TokenStream): Label {
     if(!stream.eof() && stream.peek().token == ":") {
         stream.next();
     }
-    return label.token;
+    return {name: label.token, start, end: stream.position()};
 }
 
 type Command = ({
@@ -317,7 +323,10 @@ type Command = ({
     type: "equ",
     label: Label | undefined,
     value: Expr,
-});
+}) & {
+    start: number,
+    end: number,
+};
 function parse_command(stream: TokenStream): Command {
     let name = stream.peek().token.toLowerCase();
     const start = stream.position();
@@ -326,7 +335,7 @@ function parse_command(stream: TokenStream): Command {
     switch(name) {
         case "org":
             stream.next();
-            command = {type: "org", base: parse_expr(stream)};
+            command = {type: "org", base: parse_expr(stream), start, end: stream.position()};
             break;
         case "dc.b":
         case "dc.w":
@@ -339,7 +348,7 @@ function parse_command(stream: TokenStream): Command {
                 "dc.w": 2,
                 "word": 2,
             };
-            command = {type: "dc", length: lengths[name], value: parse_expr(stream)};
+            command = {type: "dc", length: lengths[name], value: parse_expr(stream), start, end: stream.position()};
             break;
         }
         case "ds.b":
@@ -353,18 +362,18 @@ function parse_command(stream: TokenStream): Command {
                 "ds.w": 2,
                 "res.w": 2,
             };
-            command = {type: "ds", entry_size: lengths[name], length: parse_expr(stream)};
+            command = {type: "ds", entry_size: lengths[name], length: parse_expr(stream), start, end: stream.position()};
             break;
         }
         case "=":
         case "equ": {
             stream.next();
-            command = {type: "equ", label: undefined, value: parse_expr(stream)};
+            command = {type: "equ", label: undefined, value: parse_expr(stream), start, end: stream.position()};
             break;
         }
         default:
             type = "instruction";
-            command = {type: "instruction", body: parse_instruction(stream)};
+            command = {type: "instruction", body: parse_instruction(stream), start, end: stream.position()};
             break;
     }
     if(!stream.eof() && stream.peek().kind != "newline") {
@@ -374,9 +383,10 @@ function parse_command(stream: TokenStream): Command {
 }
 function parse_line(stream: TokenStream): Command[] {
     let indent = stream.peek();
-    let label: Label | undefined = undefined;
+    let label_command: Command | undefined = undefined;
     if(indent.kind != "indent") {
-        label = parse_label(stream);
+        let label = parse_label(stream);
+        label_command = {type: "label", body: label, start: label.start, end: label.end};
     } else {
         stream.next();
     }
@@ -386,29 +396,30 @@ function parse_line(stream: TokenStream): Command[] {
         switch(command.type) {
             case "org": {
                 // label then org sets the label to the new org
-                if(label !== undefined) {
-                    return [command, {type: "label", body: label}];
+                if(label_command !== undefined) {
+                    return [command, label_command];
                 } else {
                     return [command];
                 }
             }
             case "equ": {
-                if(label === undefined) {
+                if(label_command === undefined) {
                     throw new ParseError("Assignments must have a label", next);
                 }
-                command.label = label;
+                command.label = label_command.body;
+                command.start = label_command.start;
                 return [command];
             }
             default:
-                if(label !== undefined) {
-                    return [{type: "label", body: label}, command];
+                if(label_command !== undefined) {
+                    return [label_command, command];
                 } else {
                     return [command];
                 }
         }
     }
-    if(label !== undefined) {
-        return [{type: "label", body: label}];
+    if(label_command !== undefined) {
+        return [label_command];
     } else {
         return [];
     }

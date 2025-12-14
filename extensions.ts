@@ -1,6 +1,7 @@
 import { EditorState, RangeSet, StateEffect, StateField } from "@codemirror/state";
 import { Decoration, DecorationSet, EditorView, ViewPlugin, hoverTooltip, keymap } from "@codemirror/view";
 import { defaultKeymap } from "@codemirror/commands";
+import { AccessType } from "./machine";
 
 const error_decoration = Decoration.mark({class: "error"});
 
@@ -56,4 +57,51 @@ export const error_tooltip = hoverTooltip((view, pos, side) => {
             return {dom}
         }
     };
-})
+});
+
+export type AccessInfo = {
+    start: number,
+    end: number,
+    kind: AccessType,
+}
+
+export const set_access_highlight_field = StateEffect.define<AccessInfo[]>();
+
+export const access_highlight_field = StateField.define<AccessInfo[]>({
+    create() {return [];},
+    update(value, transaction) {
+        for(let e of transaction.effects) {
+            if(e.is(set_access_highlight_field)) {
+                value = e.value;
+            }
+        }
+        return value;
+    },
+});
+
+const instruction_decoration = Decoration.mark({class: "last-instruction"});
+const data_decoration = Decoration.mark({class: "last-data"});
+const pointer_decoration = Decoration.mark({class: "last-pointer"});
+const dummy_decoration = Decoration.mark({class: "last-dummy"});
+
+export const access_highlight_extension = ViewPlugin.define((view) => {
+    return {
+        decorations: RangeSet.of([]) as DecorationSet,
+        update(update) {
+            const decorations = [];
+            const field = update.view.state.field(access_highlight_field);
+            for(let {start, end, kind} of field) {
+                const decoration = {
+                    instruction: instruction_decoration,
+                    data: data_decoration,
+                    pointer: pointer_decoration,
+                    dummy: dummy_decoration,
+                }[kind];
+                decorations.push(decoration.range(start, end));
+            }
+            this.decorations = RangeSet.of(decorations);
+        }
+    };
+}, {
+    decorations: v => v.decorations,
+});

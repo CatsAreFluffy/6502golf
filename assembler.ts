@@ -76,8 +76,9 @@ function eval_expr(expr: Expr, labels: Map<string, Expr>, depth: number = 0): nu
     }
 }
 
-export default function assemble(program: Program): number[] {
+export default function assemble(program: Program): {memory: number[], sources: Map<number, [number, number]>} {
     let ret = new Array(65536).fill(0);
+    let sources = new Map();
     let relocations: Relocation[] = [];
     let labels: Map<string, Expr> = new Map();
     // reset=0x200
@@ -107,15 +108,22 @@ export default function assemble(program: Program): number[] {
                     length: command.length,
                     expr: command.value,
                     relative: false,
-                })
+                });
+                for(let i = 0; i < command.length; i++) {
+                    sources.set((org + i) & 0xffff, [command.start, command.end]);
+                }
                 org = (org + command.length) & 0xffff;
                 break;
             case "ds": {
-                org = (org + eval_expr(command.length, new Map()) * command.entry_size) & 0xffff;
+                let length = eval_expr(command.length, new Map()) * command.entry_size;
+                org = (org + length) & 0xffff;
+                for(let i = 0; i < length; i++) {
+                    sources.set((org + i) & 0xffff, [command.start, command.end]);
+                }
                 break;
             }
             case "equ": {
-                labels.set(command.label!, command.value);
+                labels.set(command.label!.name, command.value);
                 break;
             }
             case "instruction": {
@@ -149,6 +157,7 @@ export default function assemble(program: Program): number[] {
                     throw new LocatedError(`Illegal addressing mode ${mode} for ${instruction}`, start, end);
                 }
                 ret[org] = opcode;
+                sources.set(org, [command.body.start, command.body.start + command.body.instruction.length]);
                 org = (org + 1) & 0xffff;
                 let operand_length = operand_lengths.get(mode);
                 if(operand_length === undefined) {
@@ -162,10 +171,13 @@ export default function assemble(program: Program): number[] {
                     relative: mode == "relative",
                 })
                 org = (org + operand_length) & 0xffff;
+                for(let i = 0; i < operand_length; i++) {
+                    sources.set((org - operand_length + i) & 0xffff, [command.body.operand.start, command.end]);
+                }
                 break;
             }
             case "label":
-                labels.set(command.body, {type: "constant", value: org, start: 0, end: 0});
+                labels.set(command.body.name, {type: "constant", value: org, start: 0, end: 0});
                 break;
             case "org":
                 org = eval_expr(command.base, new Map());
@@ -189,5 +201,5 @@ export default function assemble(program: Program): number[] {
             value >>= 8;
         }
     }
-    return ret;
+    return {memory: ret, sources};
 }

@@ -24,10 +24,12 @@ export default class Machine {
     track_accesses: boolean = true;
     last_accesses: [number, AccessType][] = [];
 
-    constructor(memory: number[]) {
-        this.memory = memory;
+    sources: Map<number, [number, number]>;
 
+    constructor(memory: number[], sources: Map<number, [number, number]> = new Map()) {
+        this.memory = memory;
         this.pc = (memory[0xfffd] << 8) | memory[0xfffc];
+        this.sources = sources;
     }
 
     serialize_memory(): any {
@@ -86,6 +88,8 @@ export default class Machine {
 
         ret.track_accesses = this.track_accesses;
         ret.last_accesses = this.last_accesses.slice();
+
+        ret.sources = this.sources;
 
         return ret;
     }

@@ -1,11 +1,11 @@
-import React, { useMemo, useState } from "react";
-import ReactCodeMirror, { ViewUpdate } from "@uiw/react-codemirror";
+import React, { useMemo, useRef, useState } from "react";
+import ReactCodeMirror, { ReactCodeMirrorRef, ViewUpdate } from "@uiw/react-codemirror";
 
 import { lex, LocatedError, parse } from "./parser.ts";
 import assemble from "./assembler.ts";
 import Machine from "./machine.ts";
 import MachineView from "./machine_view.tsx";
-import { error_extension, error_field, error_tooltip, ErrorInfo, set_error_field } from "./extensions.ts";
+import { access_highlight_extension, access_highlight_field, AccessInfo, error_extension, error_field, error_tooltip, ErrorInfo, set_access_highlight_field, set_error_field } from "./extensions.ts";
 import { jams } from "./instructions.ts";
 import challenges from "./challenges.ts";
 import OutputView from "./output_view.tsx";
@@ -23,8 +23,8 @@ function assemble_source(src: string): [Machine | undefined, ErrorInfo] {
         console.log("lex:", tokens);
         let parse_tree = parse(tokens);
         console.log("parse:", parse_tree);
-        let code = assemble(parse_tree);
-        let machine = new Machine(code);
+        let {memory, sources} = assemble(parse_tree);
+        let machine = new Machine(memory, sources);
         return [machine, new_error_state];
     } catch(e) {
         if(e instanceof LocatedError) {
@@ -47,6 +47,8 @@ function App() {
     if(local_code) {
         code = local_code;
     }
+
+    const editor_ref = useRef<ReactCodeMirrorRef | null>(null);
 
     const [challenge_name, setChallengeName] = useState(
         () => challenges.keys().next().value!
@@ -172,13 +174,44 @@ function App() {
         }
     }
 
+    let access_locations: AccessInfo[] = useMemo(() => {
+        let access_locations: AccessInfo[] = [];
+        for(let [address, access_type] of machine.last_access_map()) {
+            let source = machine.sources.get(address);
+            if(source === undefined) {
+                continue;
+            }
+            access_locations.push({
+                start: source[0],
+                end: source[1],
+                kind: access_type,
+            });
+        }
+        return access_locations;
+    }, [machine]);
+
+    let view = editor_ref.current?.view;
+    if(view !== undefined) {
+        view.dispatch({
+            effects: [set_access_highlight_field.of(access_locations)],
+        });
+    }
+
+    const extensions = [
+        error_field,
+        error_extension,
+        error_tooltip,
+        access_highlight_field,
+        access_highlight_extension
+    ];
+
     return (
         <div className="app">
             <h1>6502 Golf</h1>
             <div>Challenges: {challenge_buttons}</div>
             <b>{challenge_name}</b>: {current_challenge.description}<br />
             {bytes} byte{bytes == 1?"":"s"}{judgment}
-            <ReactCodeMirror className="editor" value={code} onChange={handleChange} extensions={[error_field, error_extension, error_tooltip]}/>
+            <ReactCodeMirror ref={editor_ref} className="editor" value={code} onChange={handleChange} extensions={extensions}/>
             <button onClick={handleStep}>Step</button>
             <button onClick={handleRunToJump}>Run until backwards jump</button>
             <button onClick={handleRunToBrk}>Run until BRK</button>
