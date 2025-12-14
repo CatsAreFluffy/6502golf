@@ -4,10 +4,17 @@ import { defaultKeymap } from "@codemirror/commands";
 
 const error_decoration = Decoration.mark({class: "error"});
 
-export const set_error_field = StateEffect.define<[boolean, number, number, string]>();
+export type ErrorInfo = {valid : false} | {
+    valid: true,
+    start: number,
+    end: number,
+    message: string,
+}
 
-export const error_field = StateField.define<[boolean, number, number, string]>({
-    create() {return [false, 0, 0, ""];},
+export const set_error_field = StateEffect.define<ErrorInfo>();
+
+export const error_field = StateField.define<ErrorInfo>({
+    create() {return {valid: false};},
     update(value, transaction) {
         for(let e of transaction.effects) {
             if(e.is(set_error_field)) {
@@ -23,8 +30,8 @@ export const error_extension = ViewPlugin.define((view) => {
         decorations: RangeSet.of([]) as DecorationSet,
         update(update) {
             const field = update.view.state.field(error_field);
-            if(field[0] && field[1] != field[2]) {
-                this.decorations = RangeSet.of([error_decoration.range(field[1], field[2])]);
+            if(field.valid) {
+                this.decorations = RangeSet.of([error_decoration.range(field.start, field.end)]);
             } else {
                 this.decorations = RangeSet.of([]);
             }
@@ -36,16 +43,16 @@ export const error_extension = ViewPlugin.define((view) => {
 
 export const error_tooltip = hoverTooltip((view, pos, side) => {
     const field = view.state.field(error_field);
-    if(!field[0] || field[1] == field[2] || pos < field[1] || field[2] <= pos) {
+    if(!field.valid || pos < field.start || field.end <= pos) {
         return null;
     }
     return {
-        pos: field[1],
-        end: field[2],
+        pos: field.start,
+        end: field.end,
         above: true,
         create(view) {
             let dom = document.createElement("div")
-            dom.textContent = field[3];
+            dom.textContent = field.message;
             return {dom}
         }
     };

@@ -5,7 +5,7 @@ import { lex, LocatedError, parse } from "./parser.ts";
 import assemble from "./assembler.ts";
 import Machine from "./machine.ts";
 import MachineView from "./machine_view.tsx";
-import { error_extension, error_field, error_tooltip, set_error_field } from "./extension.ts";
+import { error_extension, error_field, error_tooltip, ErrorInfo, set_error_field } from "./extension.ts";
 import { jams } from "./instructions.ts";
 import challenges from "./challenges.ts";
 import OutputView from "./output_view.tsx";
@@ -15,8 +15,8 @@ import { SubmitRequest, SubmitResponse } from "./api_types.ts";
 const default_code = `
 `.replace(/^\n|\n$/g,"");
 
-function assemble_source(src: string): [Machine | undefined, [boolean, number, number, string]] {
-    let new_error_state: [boolean, number, number, string] = [false, 0, 0, ""];
+function assemble_source(src: string): [Machine | undefined, ErrorInfo] {
+    let new_error_state: ErrorInfo = {valid: false};
     console.log("src:", src);
     try {
         let tokens = lex(src)
@@ -28,7 +28,12 @@ function assemble_source(src: string): [Machine | undefined, [boolean, number, n
         return [machine, new_error_state];
     } catch(e) {
         if(e instanceof LocatedError) {
-            new_error_state = [true, e.start, e.end, e.message];
+            new_error_state = {
+                valid: true,
+                start: e.start,
+                end: e.end,
+                message: e.message,
+            };
             console.log(src.slice(e.start, e.end));
         }
         console.error(e);
