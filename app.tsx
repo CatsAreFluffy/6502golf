@@ -65,10 +65,14 @@ function App() {
         challenge_buttons.push(<button key={challenge} onClick={handleSelectChallenge(challenge)}>{challenge}</button>);
     }
 
+    const [error_info, setErrorInfo] = useState<ErrorInfo>(
+        () => ({valid: false})
+    );
+
     const [base_machine, setBaseMachine] = useState(
         () => {
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const [machine, error_state] = assemble_source(code);
+            setErrorInfo(error_state);
             return machine ?? new Machine(new Array(65536).fill(0));
         }
     );
@@ -79,7 +83,7 @@ function App() {
 
     const [judgment, setJudgment] = useState(() => "");
 
-    const handleChange = React.useCallback((val: string, viewUpdate: ViewUpdate) => {
+    const handleChange = React.useCallback((val: string, _viewUpdate: ViewUpdate) => {
         localStorage.setItem("6502_golf_code", val);
         const [machine, error_state] = assemble_source(val);
         if(machine) {
@@ -87,9 +91,7 @@ function App() {
             setMachine(machine);
             setJudgment("");
         }
-        viewUpdate.view.dispatch({
-            effects: [set_error_field.of(error_state)],
-        });
+        setErrorInfo(error_state);
     }, []);
 
     const handleStep = () => {
@@ -193,16 +195,20 @@ function App() {
 
     const view = editor_ref.current?.view;
     if(view !== undefined) {
+        console.log("dispatch");
         view.dispatch({
-            effects: [set_access_highlight_field.of(access_locations)],
+            effects: [
+                set_error_field.of(error_info),
+                set_access_highlight_field.of(access_locations)
+            ],
         });
     }
 
     const extensions = [
-        error_field,
+        error_field.init(() => error_info),
         error_extension,
         error_tooltip,
-        access_highlight_field,
+        access_highlight_field.init(() => access_locations),
         access_highlight_extension
     ];
 
