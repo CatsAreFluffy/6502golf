@@ -11,6 +11,7 @@ import challenges from "./challenges.ts";
 import OutputView from "./output_view.tsx";
 import { judge } from "./judge.ts";
 import { SubmitRequest, SubmitResponse } from "./api_types.ts";
+import ByteCount from "./byte_count.tsx";
 
 const default_code = `
 `.replace(/^\n|\n$/g,"");
@@ -94,9 +95,9 @@ function App() {
         if(machine) {
             setBaseMachine(machine);
             setMachine(machine);
-            setJudgment("");
         }
         setErrorInfo(error_state);
+        setJudgment("");
     }, []);
 
     const handleStep = () => {
@@ -222,7 +223,7 @@ function App() {
             <h1>6502 Golf</h1>
             <div>Challenges: {challenge_buttons}</div>
             <b>{challenge_name}</b>: {current_challenge.description}<br />
-            {bytes} byte{bytes == 1?"":"s"}{judgment}
+            <ByteCount bytes={bytes} valid={!error_info.valid} />{judgment}
             <ReactCodeMirror ref={editor_ref} className="editor" value={code} onChange={handleChange} extensions={extensions}/>
             <button onClick={handleStep}>Step</button>
             <button onClick={handleRunToJump}>Run until backwards jump</button>

@@ -5,6 +5,10 @@
     font-family: sans-serif;
 }
 
+.invalid-byte-count {
+    color: grey;
+}
+
 .editor {
     height: 30rem;
     margin-bottom: 1rem;
