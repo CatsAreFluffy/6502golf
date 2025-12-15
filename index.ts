@@ -55,6 +55,7 @@ const requestListener = function(req: http.IncomingMessage, res: http.ServerResp
                     let response: SubmitResponse;
                     const {memory, challenge_name} = JSON.parse(body) as SubmitRequest;
                     const machine = Machine.deserialize(memory);
+                    machine.track_accesses = false;
                     const challenge = challenges.get(challenge_name);
                     if(challenge === undefined) {
                         response = {pass: false, message: "Unknown challenge"};
