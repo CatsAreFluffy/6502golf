@@ -32,8 +32,8 @@ export default class Machine {
         this.sources = sources;
     }
 
-    serialize_memory(): any {
-        let ret: any = {};
+    serialize_memory(): Record<number, number[]> {
+        const ret: Record<number, number[]> = {};
         for(let i = 0; i < 65536; i += 256) {
             let nonempty = false;
             for(let j = 0; j < 256; j++) {
@@ -49,15 +49,15 @@ export default class Machine {
         return ret;
     }
 
-    static deserialize(data: any): Machine {
-        let memory = new Array(65536).fill(0);
-        for(let i of Object.keys(data)) {
+    static deserialize(data: Record<number, number[]>): Machine {
+        const memory = new Array(65536).fill(0);
+        for(const i of Object.keys(data)) {
             for(let j = 0; j < 256; j++) {
-                let index = ((+i) + j) | 0;
+                const index = ((+i) + j) | 0;
                 if(index < 0 || index >= 65536) {
                     throw new Error("Memory address out of range");
                 }
-                let value = data[i][j] | 0;
+                const value = data[+i][j] | 0;
                 if(value < 0 || value >= 256) {
                     throw new Error("Memory value out of range");
                 }
@@ -68,7 +68,7 @@ export default class Machine {
     }
 
     clone(): Machine {
-        let ret = new Machine(this.memory.slice());
+        const ret = new Machine(this.memory.slice());
         
         ret.pc = this.pc;
         ret.a = this.a;
@@ -103,7 +103,7 @@ export default class Machine {
     }
 
     read_instruction(access_type: AccessType = "instruction"): number {
-        let ret = this.read(this.pc, access_type);
+        const ret = this.read(this.pc, access_type);
         this.pc = (this.pc + 1) & 0xffff;
         return ret;
     }
@@ -118,7 +118,7 @@ export default class Machine {
 
     nz_bytes(): number {
         let bytes = 0;
-        for(let i of this.memory) {
+        for(const i of this.memory) {
             bytes += +(i != 0);
         }
         return bytes;
@@ -136,23 +136,23 @@ export default class Machine {
     step() {
         this.last_accesses = [];
         this.instructions++;
-        let instruction_start = this.pc;
-        let opcode = this.read_instruction();
-        let instruction = instructions[opcode];
-        let mode = exec_modes[opcode];
+        const instruction_start = this.pc;
+        const opcode = this.read_instruction();
+        const instruction = instructions[opcode];
+        const mode = exec_modes[opcode];
         let effective_address = 0;
         switch(mode) {
             case "absolute": {
-                let low = this.read_instruction();
-                let high = this.read_instruction();
+                const low = this.read_instruction();
+                const high = this.read_instruction();
                 effective_address = (high << 8) | low;
                 break;
             }
             case "absolute,x":
             case "absolute,x fast": {
-                let low = this.read_instruction();
-                let high = this.read_instruction();
-                let base_address = (high << 8) | low;
+                const low = this.read_instruction();
+                const high = this.read_instruction();
+                const base_address = (high << 8) | low;
                 effective_address = (base_address + this.x) & 0xffff;
                 if(
                     mode == "absolute,x" ||
@@ -164,9 +164,9 @@ export default class Machine {
             }
             case "absolute,y":
             case "absolute,y fast": {
-                let low = this.read_instruction();
-                let high = this.read_instruction();
-                let base_address = (high << 8) | low;
+                const low = this.read_instruction();
+                const high = this.read_instruction();
+                const base_address = (high << 8) | low;
                 effective_address = (base_address + this.y) & 0xffff;
                 if(
                     mode == "absolute,y" ||
@@ -184,29 +184,29 @@ export default class Machine {
                 this.read(this.pc, "dummy");
                 break;
             case "indirect": {
-                let base_low = this.read_instruction();
-                let base_high = this.read_instruction();
-                let pointer_address = (base_high << 8) | base_low;
-                let low = this.read(pointer_address, "pointer");
-                let high = this.read((pointer_address + 1) & 0xffff, "pointer");
+                const base_low = this.read_instruction();
+                const base_high = this.read_instruction();
+                const pointer_address = (base_high << 8) | base_low;
+                const low = this.read(pointer_address, "pointer");
+                const high = this.read((pointer_address + 1) & 0xffff, "pointer");
                 effective_address = (high << 8) | low;
                 break;
             }
             case "indirect,x": {
-                let base = this.read_instruction();
+                const base = this.read_instruction();
                 this.read(base, "dummy");
-                let pointer_address = (base + this.x) & 0xff;
-                let low = this.read(pointer_address, "pointer");
-                let high = this.read((pointer_address + 1) & 0xff, "pointer");
+                const pointer_address = (base + this.x) & 0xff;
+                const low = this.read(pointer_address, "pointer");
+                const high = this.read((pointer_address + 1) & 0xff, "pointer");
                 effective_address = (high << 8) | low;
                 break;
             }
             case "indirect,y":
             case "indirect,y fast": {
-                let pointer_address = this.read_instruction();
-                let low = this.read(pointer_address, "pointer");
-                let high = this.read((pointer_address + 1) & 0xff, "pointer");
-                let base_address = (high << 8) | low;
+                const pointer_address = this.read_instruction();
+                const low = this.read(pointer_address, "pointer");
+                const high = this.read((pointer_address + 1) & 0xff, "pointer");
+                const base_address = (high << 8) | low;
                 effective_address = (base_address + this.y) & 0xffff;
                 if(
                     mode == "indirect,y" ||
@@ -228,13 +228,13 @@ export default class Machine {
                 effective_address = this.read_instruction();
                 break;
             case "zeropage,x": {
-                let base_address = this.read_instruction();
+                const base_address = this.read_instruction();
                 this.read(base_address, "dummy");
                 effective_address = (base_address + this.x) & 0xff;
                 break;
             }
             case "zeropage,y": {
-                let base_address = this.read_instruction();
+                const base_address = this.read_instruction();
                 this.read(base_address, "dummy");
                 effective_address = (base_address + this.y) & 0xff;
                 break;
@@ -249,9 +249,9 @@ export default class Machine {
                 break;
             case "adc":
             case "sbc": {
-                let value = this.read(effective_address, "data");
-                let value2 = instruction == "sbc" ? value ^ 0xff : value;
-                let dec_result = this.a + value2 + +this.c;
+                const value = this.read(effective_address, "data");
+                const value2 = instruction == "sbc" ? value ^ 0xff : value;
+                const dec_result = this.a + value2 + +this.c;
                 if(this.d) {
                     if(instruction == "adc") {
                         this.z = (dec_result & 0xff) == 0;
@@ -291,8 +291,8 @@ export default class Machine {
             }
             case "asla":
             case "rola": {
-                let cin = this.c && instruction == "rola";
-                let shifted = this.a << 1 | +cin;
+                const cin = this.c && instruction == "rola";
+                const shifted = this.a << 1 | +cin;
                 this.a = shifted & 0xff;
                 this.set_nz(this.a);
                 this.c = (shifted >> 8) > 0;
@@ -300,11 +300,11 @@ export default class Machine {
             }
             case "asl":
             case "rol": {
-                let value = this.read(effective_address, "data");
+                const value = this.read(effective_address, "data");
                 this.write(effective_address, value, "dummy");
-                let cin = this.c && instruction == "rol";
-                let shifted = value << 1 | +cin;
-                let result = shifted & 0xff;
+                const cin = this.c && instruction == "rol";
+                const shifted = value << 1 | +cin;
+                const result = shifted & 0xff;
                 this.write(effective_address, result, "data");
                 this.set_nz(result);
                 this.c = (shifted >> 8) > 0;
@@ -318,7 +318,7 @@ export default class Machine {
             case "bpl":
             case "bvc":
             case "bvs": {
-                let conditions = {
+                const conditions = {
                     bcc: !this.c,
                     bcs: this.c,
                     beq: this.z,
@@ -338,7 +338,7 @@ export default class Machine {
                 break;
             }
             case "bit": {
-                let value = this.read(effective_address, "data");
+                const value = this.read(effective_address, "data");
                 this.n = value >= 128;
                 this.v = ((value >> 6) & 1) == 1;
                 this.z = (this.a & value) == 0;
@@ -358,8 +358,8 @@ export default class Machine {
                 flags |= +this.n << 7;
                 this.write(0x100 + this.s, flags, "data");
                 this.s = (this.s - 1) & 0xff;
-                let pc_low = this.read(0xfffe, "data");
-                let pc_high = this.read(0xffff, "data");
+                const pc_low = this.read(0xfffe, "data");
+                const pc_high = this.read(0xffff, "data");
                 this.pc = (pc_high << 8) | pc_low;
                 this.i = true;
                 break;
@@ -394,15 +394,15 @@ export default class Machine {
                         base = this.y;
                         break;
                 }
-                let result = base - this.read(effective_address, "data");
+                const result = base - this.read(effective_address, "data");
                 this.set_nz(result & 0xff);
                 this.c = (result & 0x100) == 0;
                 break;
             }
             case "dec": {
-                let value = this.read(effective_address, "data");
+                const value = this.read(effective_address, "data");
                 this.write(effective_address, value, "dummy");
-                let result = (value - 1) & 0xff;
+                const result = (value - 1) & 0xff;
                 this.write(effective_address, result, "data");
                 this.set_nz(result);
                 break;
@@ -420,9 +420,9 @@ export default class Machine {
                 this.set_nz(this.a);
                 break;
             case "inc": {
-                let value = this.read(effective_address, "data");
+                const value = this.read(effective_address, "data");
                 this.write(effective_address, value, "dummy");
-                let result = (value + 1) & 0xff;
+                const result = (value + 1) & 0xff;
                 this.write(effective_address, result, "data");
                 this.set_nz(result);
                 break;
@@ -439,13 +439,13 @@ export default class Machine {
                 this.pc = effective_address;
                 break;
             case "jsr": {
-                let new_pcl = this.read(effective_address, "instruction");
+                const new_pcl = this.read(effective_address, "instruction");
                 this.read(0x100 + this.s, "dummy");
                 this.write(0x100 + this.s, (this.pc >> 8) & 0xff, "data");
                 this.s = (this.s - 1) & 0xff;
                 this.write(0x100 + this.s, this.pc & 0xff, "data");
                 this.s = (this.s - 1) & 0xff;
-                let new_pch = this.read_instruction();
+                const new_pch = this.read_instruction();
                 this.pc = (new_pch << 8) | new_pcl;
                 break;
             }
@@ -467,10 +467,10 @@ export default class Machine {
                 break;
             case "lsr":
             case "ror": {
-                let value = this.read(effective_address, "data");
+                const value = this.read(effective_address, "data");
                 this.write(effective_address, value, "dummy");
-                let cin = this.c && instruction == "ror";
-                let result = (+cin << 8 | value) >> 1;
+                const cin = this.c && instruction == "ror";
+                const result = (+cin << 8 | value) >> 1;
                 this.write(effective_address, result, "data");
                 this.set_nz(result);
                 this.c = (value & 1) > 0;
@@ -478,7 +478,7 @@ export default class Machine {
             }
             case "lsra":
             case "rora": {
-                let cin = this.c && instruction == "rora";
+                const cin = this.c && instruction == "rora";
                 this.c = (this.a & 1) > 0;
                 this.a = (+cin << 8 | this.a) >> 1;
                 this.set_nz(this.a);
@@ -517,7 +517,7 @@ export default class Machine {
             case "plp": {
                 this.read(0x100 + this.s, "dummy");
                 this.s = (this.s + 1) & 0xff;
-                let flags = this.read(0x100 + this.s, "data");
+                const flags = this.read(0x100 + this.s, "data");
                 this.c = (flags & 0x01) > 0;
                 this.z = (flags & 0x02) > 0;
                 this.i = (flags & 0x04) > 0;
@@ -529,7 +529,7 @@ export default class Machine {
             case "rti": {
                 this.read(0x100 + this.s, "dummy");
                 this.s = (this.s + 1) & 0xff;
-                let flags = this.read(0x100 + this.s, "data");
+                const flags = this.read(0x100 + this.s, "data");
                 this.c = (flags & 0x01) > 0;
                 this.z = (flags & 0x02) > 0;
                 this.i = (flags & 0x04) > 0;
@@ -537,9 +537,9 @@ export default class Machine {
                 this.v = (flags & 0x40) > 0;
                 this.n = (flags & 0x80) > 0;
                 this.s = (this.s + 1) & 0xff;
-                let pc_low = this.read(0x100 + this.s, "data");
+                const pc_low = this.read(0x100 + this.s, "data");
                 this.s = (this.s + 1) & 0xff;
-                let pc_high = this.read(0x100 + this.s, "data");
+                const pc_high = this.read(0x100 + this.s, "data");
                 this.s = (this.s + 1) & 0xff;
                 this.pc = (pc_high << 8) | pc_low;
                 break;
@@ -547,18 +547,18 @@ export default class Machine {
             case "rts": {
                 this.read(0x100 + this.s, "dummy");
                 this.s = (this.s + 1) & 0xff;
-                let pc_low = this.read(0x100 + this.s, "data");
+                const pc_low = this.read(0x100 + this.s, "data");
                 this.s = (this.s + 1) & 0xff;
-                let pc_high = this.read(0x100 + this.s, "data");
+                const pc_high = this.read(0x100 + this.s, "data");
                 this.s = (this.s + 1) & 0xff;
                 this.pc = (pc_high << 8) | pc_low;
                 this.read_instruction();
                 break;
             }
             case "sbx": {
-                let ax = this.a & this.x;
-                let value = this.read(effective_address, "data");
-                let result = ax + (value ^ 0xff) + 1;
+                const ax = this.a & this.x;
+                const value = this.read(effective_address, "data");
+                const result = ax + (value ^ 0xff) + 1;
                 this.x = result & 0xff;
                 this.set_nz(this.x);
                 this.c = result >= 256;

@@ -20,21 +20,21 @@ export class LocatedError extends Error {
 function lex(input: string): Token[] {
     let position = 0;
     let start_of_line = true;
-    let ret: Token[] = [];
-    let regexp = /([ \t]+|(?:[ \t]*(?:;[^\n]*)?\n)+(?:[ \t]+$)?|[0-9a-zA-Z_.$]+|'(?:[^\n\\']|\\.)'|<<|>>|[\(\)\[\]+-\/*|^&~,#:<>=])/sy;
+    const ret: Token[] = [];
+    const regexp = /([ \t]+|(?:[ \t]*(?:;[^\n]*)?\n)+(?:[ \t]+$)?|[0-9a-zA-Z_.$]+|'(?:[^\n\\']|\\.)'|<<|>>|[()[\]+-/*|^&~,#:<>=])/sy;
     regexp.lastIndex = 0;
     while(regexp.lastIndex < input.length) {
-        let last_index = regexp.lastIndex;
-        let match = regexp.exec(input);
+        const last_index = regexp.lastIndex;
+        const match = regexp.exec(input);
         if(!match) {
-            let line_regexp = /.*/y;
+            const line_regexp = /.*/y;
             line_regexp.lastIndex = last_index;
             console.log(line_regexp.lastIndex);
-            let line_length = line_regexp.exec(input)![0].length;
+            const line_length = line_regexp.exec(input)![0].length;
             throw new LocatedError("Lexer error", position, position + line_length);
         }
 
-        let token = match[1];
+        const token = match[1];
         // simplify whitespace tokens
         if(/\s/.exec(token)) {
             if(token.includes("\n")) {
@@ -77,7 +77,7 @@ class TokenStream {
     }
 
     next(): Token {
-        let token = this.peek();
+        const token = this.peek();
         this.index++;
         return token;
     }
@@ -120,26 +120,25 @@ type Expr = ({
     end: number,
 };
 function parse_short_expr(stream: TokenStream): Expr {
-    let next = stream.next();
+    const next = stream.next();
     const start = next.position;
     const end = start + next.token.length;
     switch(next.kind) {
         case "identifier": {
-            let head: Expr;
             if(next.token.match(/^\$|0x/i)) {
-                let value = parseInt(next.token.replace(/^\$|0x/i,""), 16);
+                const value = parseInt(next.token.replace(/^\$|0x/i,""), 16);
                 if(isNaN(value)) {
                     throw new ParseError("Invalid number", next);
                 }
                 return {type: "constant", value, start, end};
             } else if(next.token.match(/^0o/i)) {
-                let value = parseInt(next.token.replace(/^0o/i,""), 8);
+                const value = parseInt(next.token.replace(/^0o/i,""), 8);
                 if(isNaN(value)) {
                     throw new ParseError("Invalid number", next);
                 }
                 return {type: "constant", value, start, end};
             } else if(next.token.match(/^0b/i)) {
-                let value = parseInt(next.token.replace(/^0b/i,""), 2);
+                const value = parseInt(next.token.replace(/^0b/i,""), 2);
                 if(isNaN(value)) {
                     throw new ParseError("Invalid number", next);
                 }
@@ -166,7 +165,7 @@ function parse_short_expr(stream: TokenStream): Expr {
                 }
                 return {type: "constant", value: char.charCodeAt(0), start, end};
             } else if(next.token.match(/^[0-9]/)) {
-                let value = parseInt(next.token);
+                const value = parseInt(next.token);
                 if(isNaN(value)) {
                     throw new ParseError("Invalid number", next);
                 }
@@ -177,10 +176,10 @@ function parse_short_expr(stream: TokenStream): Expr {
         }
         case "symbol":
             if(next.token.match(/-|~|<|>/)) {
-                let rest = parse_short_expr(stream);
-                return {type: "op", operation: next.token as any, body: rest, start, end: stream.position()};
+                const rest = parse_short_expr(stream);
+                return {type: "op", operation: next.token as "-" | "~" | "<" | ">", body: rest, start, end: stream.position()};
             } else if(next.token == "[") {
-                let body = parse_expr(stream);
+                const body = parse_expr(stream);
                 if(stream.next().token != "]") {
                     throw new ParseError("Unclosed bracket", next);
                 }
@@ -195,8 +194,8 @@ function parse_short_expr(stream: TokenStream): Expr {
 function parse_expr(stream: TokenStream): Expr {
     let head = parse_short_expr(stream);
     while(!stream.eof() && stream.peek().kind == "symbol" && stream.peek().token.match(/^[+\-*/&|^]$|^<<$|^>>$/)) {
-        let operation = stream.next().token as "+" | "-" | "*" | "/" | "%" | "<<" | ">>" | "&" | "|" | "^";
-        let right = parse_short_expr(stream);
+        const operation = stream.next().token as "+" | "-" | "*" | "/" | "%" | "<<" | ">>" | "&" | "|" | "^";
+        const right = parse_short_expr(stream);
         head = {type: "binop", operation, left: head, right, start: head.start, end: right.end};
     }
     return head;
@@ -210,8 +209,7 @@ function parse_operand(stream: TokenStream): Operand {
     }
     const start = stream.position();
     let mode: ParseAddressingMode = "absolute";
-    let indirect = false;
-    let first = stream.peek();
+    const first = stream.peek();
     if(first.token == "#") {
         mode = "immediate";
         stream.next();
@@ -219,11 +217,11 @@ function parse_operand(stream: TokenStream): Operand {
         mode = "indirect";
         stream.next();
     }
-    let body = parse_expr(stream);
+    const body = parse_expr(stream);
     if(!stream.eof() && stream.peek().token == ",") {
-        let comma = stream.next();
+        const comma = stream.next();
         if(mode == "absolute") {
-            let index = stream.next();
+            const index = stream.next();
             switch(index.token.toLowerCase()) {
                 case "x":
                     mode = "absolute,x";
@@ -235,7 +233,7 @@ function parse_operand(stream: TokenStream): Operand {
                     throw new ParseError("Unexpected token after ,", index);
             }
         } else if(mode == "indirect") {
-            let index = stream.next();
+            const index = stream.next();
             switch(index.token.toLowerCase()) {
                 case "x":
                     mode = "indirect,x";
@@ -256,7 +254,7 @@ function parse_operand(stream: TokenStream): Operand {
         stream.next();
         if(mode == "indirect" && !stream.eof() && stream.peek().token == ",") {
             stream.next();
-            let index = stream.next();
+            const index = stream.next();
             switch(index.token.toLowerCase()) {
                 case "x":
                     throw new ParseError("Indirect-indexed addressing can only use the y register", index);
@@ -278,7 +276,7 @@ type Instruction = {
     end: number,
 }
 function parse_instruction(stream: TokenStream): Instruction {
-    let instruction = stream.next();
+    const instruction = stream.next();
     if(instruction.kind != "identifier") {
         throw new ParseError("Instructions must not be symbols", instruction);
     }
@@ -292,7 +290,7 @@ type Label = {
 };
 function parse_label(stream: TokenStream): Label {
     const start = stream.position();
-    let label = stream.next();
+    const label = stream.next();
     if(label.kind != "identifier") {
         throw new ParseError("Labels must not be symbols", label);
     }
@@ -328,7 +326,7 @@ type Command = ({
     end: number,
 };
 function parse_command(stream: TokenStream): Command {
-    let name = stream.peek().token.toLowerCase();
+    const name = stream.peek().token.toLowerCase();
     const start = stream.position();
     let type = "directive";
     let command: Command;
@@ -342,7 +340,7 @@ function parse_command(stream: TokenStream): Command {
         case "byte":
         case "word": {
             stream.next();
-            let lengths = {
+            const lengths = {
                 "dc.b": 1,
                 "byte": 1,
                 "dc.w": 2,
@@ -356,7 +354,7 @@ function parse_command(stream: TokenStream): Command {
         case "res.b":
         case "res.w": {
             stream.next();
-            let lengths = {
+            const lengths = {
                 "ds.b": 1,
                 "res.b": 1,
                 "ds.w": 2,
@@ -382,17 +380,17 @@ function parse_command(stream: TokenStream): Command {
     return command;
 }
 function parse_line(stream: TokenStream): Command[] {
-    let indent = stream.peek();
+    const indent = stream.peek();
     let label_command: Command | undefined = undefined;
     if(indent.kind != "indent") {
-        let label = parse_label(stream);
+        const label = parse_label(stream);
         label_command = {type: "label", body: label, start: label.start, end: label.end};
     } else {
         stream.next();
     }
     if(!stream.eof() && stream.peek().kind != "newline") {
-        let next = stream.peek();
-        let command = parse_command(stream)
+        const next = stream.peek();
+        const command = parse_command(stream)
         switch(command.type) {
             case "org": {
                 // label then org sets the label to the new org
@@ -427,7 +425,7 @@ function parse_line(stream: TokenStream): Command[] {
 
 type Program = Command[]
 function parse_program(stream: TokenStream): Program {
-    let ret = [];
+    const ret = [];
     while(!stream.eof()) {
         if(stream.peek().kind == "newline") {
             stream.next();
@@ -435,7 +433,7 @@ function parse_program(stream: TokenStream): Program {
         if(stream.eof()) {
             break;
         }
-        let line = parse_line(stream);
+        const line = parse_line(stream);
         console.log("prog", line, stream.index);
         // for(let command of line) {
         //     ret.push(command);

@@ -1,6 +1,6 @@
 export type SubmitRequest = {
     challenge_name: string,
-    memory: any,
+    memory: Record<number, number[]>,
 };
 
 export type SubmitResponse = {

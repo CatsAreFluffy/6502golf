@@ -1,6 +1,5 @@
-import { EditorState, RangeSet, StateEffect, StateField } from "@codemirror/state";
-import { Decoration, DecorationSet, EditorView, ViewPlugin, hoverTooltip, keymap } from "@codemirror/view";
-import { defaultKeymap } from "@codemirror/commands";
+import { RangeSet, StateEffect, StateField } from "@codemirror/state";
+import { Decoration, DecorationSet, ViewPlugin, hoverTooltip } from "@codemirror/view";
 import { AccessType } from "./machine";
 
 const error_decoration = Decoration.mark({class: "error"});
@@ -17,7 +16,7 @@ export const set_error_field = StateEffect.define<ErrorInfo>();
 export const error_field = StateField.define<ErrorInfo>({
     create() {return {valid: false};},
     update(value, transaction) {
-        for(let e of transaction.effects) {
+        for(const e of transaction.effects) {
             if(e.is(set_error_field)) {
                 value = e.value;
             }
@@ -26,7 +25,7 @@ export const error_field = StateField.define<ErrorInfo>({
     },
 });
 
-export const error_extension = ViewPlugin.define((view) => {
+export const error_extension = ViewPlugin.define((_view) => {
     return {
         decorations: RangeSet.of([]) as DecorationSet,
         update(update) {
@@ -42,7 +41,7 @@ export const error_extension = ViewPlugin.define((view) => {
     decorations: v => v.decorations,
 });
 
-export const error_tooltip = hoverTooltip((view, pos, side) => {
+export const error_tooltip = hoverTooltip((view, pos, _side) => {
     const field = view.state.field(error_field);
     if(!field.valid || pos < field.start || field.end <= pos) {
         return null;
@@ -51,8 +50,8 @@ export const error_tooltip = hoverTooltip((view, pos, side) => {
         pos: field.start,
         end: field.end,
         above: true,
-        create(view) {
-            let dom = document.createElement("div")
+        create(_view) {
+            const dom = document.createElement("div")
             dom.textContent = field.message;
             return {dom}
         }
@@ -70,7 +69,7 @@ export const set_access_highlight_field = StateEffect.define<AccessInfo[]>();
 export const access_highlight_field = StateField.define<AccessInfo[]>({
     create() {return [];},
     update(value, transaction) {
-        for(let e of transaction.effects) {
+        for(const e of transaction.effects) {
             if(e.is(set_access_highlight_field)) {
                 value = e.value;
             }
@@ -84,13 +83,13 @@ const data_decoration = Decoration.mark({class: "last-data"});
 const pointer_decoration = Decoration.mark({class: "last-pointer"});
 const dummy_decoration = Decoration.mark({class: "last-dummy"});
 
-export const access_highlight_extension = ViewPlugin.define((view) => {
+export const access_highlight_extension = ViewPlugin.define((_view) => {
     return {
         decorations: RangeSet.of([]) as DecorationSet,
         update(update) {
             const decorations = [];
             const field = update.view.state.field(access_highlight_field);
-            for(let {start, end, kind} of field) {
+            for(const {start, end, kind} of field) {
                 const decoration = {
                     instruction: instruction_decoration,
                     data: data_decoration,

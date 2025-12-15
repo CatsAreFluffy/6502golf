@@ -19,12 +19,12 @@ function assemble_source(src: string): [Machine | undefined, ErrorInfo] {
     let new_error_state: ErrorInfo = {valid: false};
     console.log("src:", src);
     try {
-        let tokens = lex(src)
+        const tokens = lex(src)
         console.log("lex:", tokens);
-        let parse_tree = parse(tokens);
+        const parse_tree = parse(tokens);
         console.log("parse:", parse_tree);
-        let {memory, sources} = assemble(parse_tree);
-        let machine = new Machine(memory, sources);
+        const {memory, sources} = assemble(parse_tree);
+        const machine = new Machine(memory, sources);
         return [machine, new_error_state];
     } catch(e) {
         if(e instanceof LocatedError) {
@@ -43,7 +43,7 @@ function assemble_source(src: string): [Machine | undefined, ErrorInfo] {
 
 function App() {
     let code = default_code;
-    let local_code = localStorage.getItem("6502_golf_code");
+    const local_code = localStorage.getItem("6502_golf_code");
     if(local_code) {
         code = local_code;
     }
@@ -61,13 +61,14 @@ function App() {
     }
 
     const challenge_buttons = [];
-    for(let challenge of challenges.keys()) {
+    for(const challenge of challenges.keys()) {
         challenge_buttons.push(<button key={challenge} onClick={handleSelectChallenge(challenge)}>{challenge}</button>);
     }
 
     const [base_machine, setBaseMachine] = useState(
         () => {
-            let [machine, error_state] = assemble_source(code);
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const [machine, error_state] = assemble_source(code);
             return machine ?? new Machine(new Array(65536).fill(0));
         }
     );
@@ -80,7 +81,7 @@ function App() {
 
     const handleChange = React.useCallback((val: string, viewUpdate: ViewUpdate) => {
         localStorage.setItem("6502_golf_code", val);
-        let [machine, error_state] = assemble_source(val);
+        const [machine, error_state] = assemble_source(val);
         if(machine) {
             setBaseMachine(machine);
             setMachine(machine);
@@ -92,13 +93,13 @@ function App() {
     }, []);
 
     const handleStep = () => {
-        let new_machine = machine.clone();
+        const new_machine = machine.clone();
         new_machine.step();
         setMachine(new_machine);
     }
 
     const handleRunToJump = () => {
-        let new_machine = machine.clone();
+        const new_machine = machine.clone();
         let last_pc = -1;
         while(last_pc < new_machine.pc) {
             last_pc = new_machine.pc;
@@ -108,16 +109,16 @@ function App() {
     }
 
     const handleRunToBrk = () => {
-        let new_machine = machine.clone();
-        let now = Date.now();
+        const new_machine = machine.clone();
+        const now = Date.now();
         for(let i = 0; i < 1000000; i++) {
-            let opcode = new_machine.memory[new_machine.pc]
+            const opcode = new_machine.memory[new_machine.pc]
             if(!opcode || jams[opcode]) {
                 break;
             }
             new_machine.step();
         }
-        let millis = Date.now() - now;
+        const millis = Date.now() - now;
         if(new_machine.instructions > machine.instructions) {
             console.log("One step takes", (millis*1e6/(new_machine.instructions - machine.instructions)).toFixed(2), "ns");
             console.log("One cycle takes", (millis*1e6/(new_machine.cycles - machine.cycles)).toFixed(2), "ns");
@@ -128,20 +129,20 @@ function App() {
         setMachine(new_machine);
     }
 
-    let expected_output_bytes = useMemo(() => current_challenge.output(), [challenge_name]);
+    const expected_output_bytes = useMemo(() => current_challenge.output(), [challenge_name]);
 
     const handleRunToEnd = () => {
-        let new_machine = machine.clone();
-        let now = Date.now();
+        const new_machine = machine.clone();
+        const now = Date.now();
         new_machine.run_until_jam(1 << 30);
-        let millis = Date.now() - now;
+        const millis = Date.now() - now;
         if(new_machine.instructions > machine.instructions) {
             console.log("One step takes", (millis*1e6/(new_machine.instructions - machine.instructions)).toFixed(2), "ns");
             console.log("One cycle takes", (millis*1e6/(new_machine.cycles - machine.cycles)).toFixed(2), "ns");
         }
         setMachine(new_machine);
         if(jams[new_machine.memory[new_machine.pc]]) {
-            let pass = judge(new_machine, current_challenge);
+            const pass = judge(new_machine, current_challenge);
             if(pass) {
                 setJudgment(` (passed in ${new_machine.cycles} cycles)`);
             } else {
@@ -150,13 +151,13 @@ function App() {
         }
     }
 
-    let [submit_judgment, setSubmitJudgment] = useState(() => "");
+    const [submit_judgment, setSubmitJudgment] = useState(() => "");
 
     const handleSubmit = async () => {
         setSubmitJudgment("...");
-        let memory = base_machine.serialize_memory();
-        let request: SubmitRequest = {challenge_name, memory};
-        let response = await fetch("/submit",
+        const memory = base_machine.serialize_memory();
+        const request: SubmitRequest = {challenge_name, memory};
+        const response = await fetch("/submit",
             {
                 method: "POST",
                 headers: {
@@ -165,8 +166,8 @@ function App() {
                 body: JSON.stringify(request),
             }
         );
-        let body: SubmitResponse = await response.json();
-        let {pass, message} = body;
+        const body: SubmitResponse = await response.json();
+        const {pass, message} = body;
         if(pass) {
             setSubmitJudgment(`Passed!`);
         } else {
@@ -174,10 +175,10 @@ function App() {
         }
     }
 
-    let access_locations: AccessInfo[] = useMemo(() => {
-        let access_locations: AccessInfo[] = [];
-        for(let [address, access_type] of machine.last_access_map()) {
-            let source = machine.sources.get(address);
+    const access_locations: AccessInfo[] = useMemo(() => {
+        const access_locations: AccessInfo[] = [];
+        for(const [address, access_type] of machine.last_access_map()) {
+            const source = machine.sources.get(address);
             if(source === undefined) {
                 continue;
             }
@@ -190,7 +191,7 @@ function App() {
         return access_locations;
     }, [machine]);
 
-    let view = editor_ref.current?.view;
+    const view = editor_ref.current?.view;
     if(view !== undefined) {
         view.dispatch({
             effects: [set_access_highlight_field.of(access_locations)],

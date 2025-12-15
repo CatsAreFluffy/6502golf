@@ -3,7 +3,7 @@ import React from "react";
 export default function OutputView({ data }: {data: number[]}) {
     let line = "";
     const tags = [];
-    for(let i of data) {
+    for(const i of data) {
         if(!i) {
             break;
         } else if(i == 0x0a) {

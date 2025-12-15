@@ -11,9 +11,15 @@
   "author": "CatsAreFluffy",
   "license": "MIT",
   "devDependencies": {
+    "@eslint/js": "^9.39.2",
     "@types/node": "^24.10.0",
     "@types/react-dom": "^19.2.2",
-    "esbuild": "0.26.0"
+    "esbuild": "0.26.0",
+    "eslint": "^9.39.2",
+    "eslint-plugin-react": "^7.37.5",
+    "globals": "^16.5.0",
+    "jiti": "^2.6.1",
+    "typescript-eslint": "^8.49.0"
   },
   "dependencies": {
     "@uiw/react-codemirror": "^4.25.3",

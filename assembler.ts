@@ -1,5 +1,5 @@
-import { Operand, Command, Program, Expr, LocatedError } from "./parser.ts";
-import { AssembleInstruction, ParseAddressingMode, AssembleAddressingMode, encodings } from "./instructions.ts";
+import { Program, Expr, LocatedError } from "./parser.ts";
+import { AssembleInstruction, AssembleAddressingMode, encodings } from "./instructions.ts";
 
 type Relocation = {
     address: number,
@@ -15,16 +15,16 @@ function eval_expr(expr: Expr, labels: Map<string, Expr>, depth: number = 0): nu
     }
     switch(expr.type) {
         case "binop": {
-            let left = eval_expr(expr.left, labels, depth);
-            let right = eval_expr(expr.right, labels, depth);
+            const left = eval_expr(expr.left, labels, depth);
+            const right = eval_expr(expr.right, labels, depth);
             switch(expr.operation) {
                 case "+":
                     return (left + right) | 0;
                 case "-":
                     return (left - right) | 0;
                 case "*": {
-                    let top = (left * (right & 0xffff0000)) | 0;
-                    let bottom = (left * (right & 0xffff)) | 0;
+                    const top = (left * (right & 0xffff0000)) | 0;
+                    const bottom = (left * (right & 0xffff)) | 0;
                     return (top + bottom) | 0;
                 }
                 case "/":
@@ -50,9 +50,10 @@ function eval_expr(expr: Expr, labels: Map<string, Expr>, depth: number = 0): nu
                 case "^":
                     return left ^ right;
             }
+            break;
         }
         case "op": {
-            let body = eval_expr(expr.body, labels, depth);
+            const body = eval_expr(expr.body, labels, depth);
             switch(expr.operation) {
                 case "-":
                     return -body | 0;
@@ -63,9 +64,10 @@ function eval_expr(expr: Expr, labels: Map<string, Expr>, depth: number = 0): nu
                 case ">":
                     return (body >> 8) & 0xff;
             }
+            break;
         }
         case "label": {
-            let subexpr = labels.get(expr.label);
+            const subexpr = labels.get(expr.label);
             if(subexpr === undefined) {
                 throw new LocatedError(`Unknown label ${expr.label}`, expr.start, expr.end);
             }
@@ -77,10 +79,10 @@ function eval_expr(expr: Expr, labels: Map<string, Expr>, depth: number = 0): nu
 }
 
 export default function assemble(program: Program): {memory: number[], sources: Map<number, [number, number]>} {
-    let ret = new Array(65536).fill(0);
-    let sources = new Map();
-    let relocations: Relocation[] = [];
-    let labels: Map<string, Expr> = new Map();
+    const ret = new Array(65536).fill(0);
+    const sources = new Map();
+    const relocations: Relocation[] = [];
+    const labels: Map<string, Expr> = new Map();
     // reset=0x200
     ret[0xfffd] = 2;
     let org = 0x200;
@@ -99,7 +101,7 @@ export default function assemble(program: Program): {memory: number[], sources: 
         ["zeropage,x", 1],
         ["zeropage,y", 1],
     ])
-    for(let command of program) {
+    for(const command of program) {
         switch(command.type) {
             case "dc":
                 relocations.push({
@@ -115,7 +117,7 @@ export default function assemble(program: Program): {memory: number[], sources: 
                 org = (org + command.length) & 0xffff;
                 break;
             case "ds": {
-                let length = eval_expr(command.length, new Map()) * command.entry_size;
+                const length = eval_expr(command.length, new Map()) * command.entry_size;
                 org = (org + length) & 0xffff;
                 for(let i = 0; i < length; i++) {
                     sources.set((org + i) & 0xffff, [command.start, command.end]);
@@ -127,6 +129,7 @@ export default function assemble(program: Program): {memory: number[], sources: 
                 break;
             }
             case "instruction": {
+                // eslint-disable-next-line prefer-const
                 let {instruction, operand, start, end} = command.body;
                 let mode: AssembleAddressingMode = operand.mode;
                 if(branch_instructions.has(instruction)) {
@@ -148,18 +151,18 @@ export default function assemble(program: Program): {memory: number[], sources: 
                     }
                     instruction = instruction.slice(0, 3);
                 }
-                let modes = encodings.get(instruction as AssembleInstruction);
+                const modes = encodings.get(instruction as AssembleInstruction);
                 if(modes === undefined) {
                     throw new LocatedError(`Unknown instruction ${instruction}`, start, start + command.body.instruction.length);
                 }
-                let opcode = modes.get(mode);
+                const opcode = modes.get(mode);
                 if(opcode === undefined) {
                     throw new LocatedError(`Illegal addressing mode ${mode} for ${instruction}`, start, end);
                 }
                 ret[org] = opcode;
                 sources.set(org, [command.body.start, command.body.start + command.body.instruction.length]);
                 org = (org + 1) & 0xffff;
-                let operand_length = operand_lengths.get(mode);
+                const operand_length = operand_lengths.get(mode);
                 if(operand_length === undefined) {
                     throw new LocatedError(`Unknown length for addressing mode ${mode}`, start, end);
                 }
@@ -184,7 +187,7 @@ export default function assemble(program: Program): {memory: number[], sources: 
                 break;
         }
     }
-    for(let {address, instruction_address, length, expr, relative} of relocations) {
+    for(const {address, instruction_address, length, expr, relative} of relocations) {
         let value = eval_expr(expr, labels);
         if(relative) {
             value = (value - instruction_address) & 0xffff;

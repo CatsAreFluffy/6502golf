@@ -53,9 +53,9 @@ const requestListener = function(req: http.IncomingMessage, res: http.ServerResp
             req.on("end", () => {
                 try {
                     let response: SubmitResponse;
-                    let {memory, challenge_name} = JSON.parse(body) as SubmitRequest;
-                    let machine = Machine.deserialize(memory);
-                    let challenge = challenges.get(challenge_name);
+                    const {memory, challenge_name} = JSON.parse(body) as SubmitRequest;
+                    const machine = Machine.deserialize(memory);
+                    const challenge = challenges.get(challenge_name);
                     if(challenge === undefined) {
                         response = {pass: false, message: "Unknown challenge"};
                     } else {
@@ -64,7 +64,7 @@ const requestListener = function(req: http.IncomingMessage, res: http.ServerResp
                         if(machine.cycles > (1 << 30)) {
                             response = {pass: false, message: "Too many cycles"};
                         } else {
-                            let pass = judge(machine, challenge);
+                            const pass = judge(machine, challenge);
                             response = {pass, message: pass ? "Passed" : "Incorrect output"};
                         }
                     }
