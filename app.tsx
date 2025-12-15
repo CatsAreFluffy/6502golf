@@ -42,11 +42,15 @@ function assemble_source(src: string): [Machine | undefined, ErrorInfo] {
 }
 
 function App() {
-    let code = default_code;
-    const local_code = localStorage.getItem("6502_golf_code");
-    if(local_code) {
-        code = local_code;
-    }
+    const [code, setCode] = useState(
+        () => {
+            const local_code = localStorage.getItem("6502_golf_code");
+            if(local_code) {
+                return local_code;
+            }
+            return default_code;
+        }
+    );
 
     const editor_ref = useRef<ReactCodeMirrorRef | null>(null);
 
@@ -85,6 +89,7 @@ function App() {
 
     const handleChange = React.useCallback((val: string, _viewUpdate: ViewUpdate) => {
         localStorage.setItem("6502_golf_code", val);
+        setCode(val);
         const [machine, error_state] = assemble_source(val);
         if(machine) {
             setBaseMachine(machine);
