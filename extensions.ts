@@ -9,7 +9,7 @@ export type ErrorInfo = {valid : false} | {
     start: number,
     end: number,
     message: string,
-}
+};
 
 export const set_error_field = StateEffect.define<ErrorInfo>();
 
@@ -51,9 +51,9 @@ export const error_tooltip = hoverTooltip((view, pos, _side) => {
         end: field.end,
         above: true,
         create(_view) {
-            const dom = document.createElement("div")
+            const dom = document.createElement("div");
             dom.textContent = field.message;
-            return {dom}
+            return {dom};
         }
     };
 });
@@ -62,7 +62,7 @@ export type AccessInfo = {
     start: number,
     end: number,
     kind: AccessType,
-}
+};
 
 export const set_access_highlight_field = StateEffect.define<AccessInfo[]>();
 

@@ -4,7 +4,7 @@ type Token = {
     token: string,
     kind: "identifier" | "symbol" | "indent" | "newline" | "eof",
     position: number,
-}
+};
 
 export class LocatedError extends Error {
     start: number;
@@ -274,7 +274,7 @@ type Instruction = {
     operand: Operand,
     start: number,
     end: number,
-}
+};
 function parse_instruction(stream: TokenStream): Instruction {
     const instruction = stream.next();
     if(instruction.kind != "identifier") {
@@ -390,7 +390,7 @@ function parse_line(stream: TokenStream): Command[] {
     }
     if(!stream.eof() && stream.peek().kind != "newline") {
         const next = stream.peek();
-        const command = parse_command(stream)
+        const command = parse_command(stream);
         switch(command.type) {
             case "org": {
                 // label then org sets the label to the new org
@@ -423,7 +423,7 @@ function parse_line(stream: TokenStream): Command[] {
     }
 }
 
-type Program = Command[]
+type Program = Command[];
 function parse_program(stream: TokenStream): Program {
     const ret = [];
     while(!stream.eof()) {

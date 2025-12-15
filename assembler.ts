@@ -7,7 +7,7 @@ type Relocation = {
     length: number,
     expr: Expr,
     relative: boolean,
-}
+};
 
 function eval_expr(expr: Expr, labels: Map<string, Expr>, depth: number = 0): number {
     if(depth > labels.size) {
@@ -100,7 +100,7 @@ export default function assemble(program: Program): {memory: number[], sources: 
         ["zeropage", 1],
         ["zeropage,x", 1],
         ["zeropage,y", 1],
-    ])
+    ]);
     for(const command of program) {
         switch(command.type) {
             case "dc":
@@ -172,7 +172,7 @@ export default function assemble(program: Program): {memory: number[], sources: 
                     length: operand_length,
                     expr: operand.body,
                     relative: mode == "relative",
-                })
+                });
                 org = (org + operand_length) & 0xffff;
                 for(let i = 0; i < operand_length; i++) {
                     sources.set((org - operand_length + i) & 0xffff, [command.body.operand.start, command.end]);

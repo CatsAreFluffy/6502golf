@@ -19,7 +19,7 @@ function assemble_source(src: string): [Machine | undefined, ErrorInfo] {
     let new_error_state: ErrorInfo = {valid: false};
     console.log("src:", src);
     try {
-        const tokens = lex(src)
+        const tokens = lex(src);
         console.log("lex:", tokens);
         const parse_tree = parse(tokens);
         console.log("parse:", parse_tree);
@@ -52,13 +52,13 @@ function App() {
 
     const [challenge_name, setChallengeName] = useState(
         () => challenges.keys().next().value!
-    )
+    );
     
     const current_challenge = challenges.get(challenge_name)!;
 
     const handleSelectChallenge = (challenge: string) => () => {
         setChallengeName(challenge);
-    }
+    };
 
     const challenge_buttons = [];
     for(const challenge of challenges.keys()) {
@@ -96,7 +96,7 @@ function App() {
         const new_machine = machine.clone();
         new_machine.step();
         setMachine(new_machine);
-    }
+    };
 
     const handleRunToJump = () => {
         const new_machine = machine.clone();
@@ -106,13 +106,13 @@ function App() {
             new_machine.step();
         }
         setMachine(new_machine);
-    }
+    };
 
     const handleRunToBrk = () => {
         const new_machine = machine.clone();
         const now = Date.now();
         for(let i = 0; i < 1000000; i++) {
-            const opcode = new_machine.memory[new_machine.pc]
+            const opcode = new_machine.memory[new_machine.pc];
             if(!opcode || jams[opcode]) {
                 break;
             }
@@ -127,7 +127,7 @@ function App() {
             new_machine.pc = (new_machine.pc + 1) & 0xffff;
         }
         setMachine(new_machine);
-    }
+    };
 
     const expected_output_bytes = useMemo(() => current_challenge.output(), [challenge_name]);
 
@@ -149,7 +149,7 @@ function App() {
                 setJudgment(` (failed)`);
             }
         }
-    }
+    };
 
     const [submit_judgment, setSubmitJudgment] = useState(() => "");
 
@@ -173,7 +173,7 @@ function App() {
         } else {
             setSubmitJudgment(`Failed (${message})`);
         }
-    }
+    };
 
     const access_locations: AccessInfo[] = useMemo(() => {
         const access_locations: AccessInfo[] = [];

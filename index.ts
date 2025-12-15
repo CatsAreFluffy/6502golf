@@ -1,6 +1,6 @@
-import * as http from "http"
-import * as fs from "fs"
-import Machine from "./machine.ts"
+import * as http from "http";
+import * as fs from "fs";
+import Machine from "./machine.ts";
 import { judge } from "./judge.ts";
 import challenges from "./challenges.ts";
 import { SubmitRequest, SubmitResponse } from "./api_types.ts";
@@ -20,7 +20,7 @@ const requestListener = function(req: http.IncomingMessage, res: http.ServerResp
                 res.setHeader("Content-Type", "text/html");
                 res.writeHead(200);
                 res.end(data);
-            })
+            });
             break;
         case "/out.js":
             fs.readFile("out.js", "utf8", (err, data) => {
@@ -31,7 +31,7 @@ const requestListener = function(req: http.IncomingMessage, res: http.ServerResp
                 res.setHeader("Content-Type", "text/javascript");
                 res.writeHead(200);
                 res.end(data);
-            })
+            });
             break;
         case "/style.css":
             fs.readFile("style.css", "utf8", (err, data) => {
@@ -42,14 +42,14 @@ const requestListener = function(req: http.IncomingMessage, res: http.ServerResp
                 res.setHeader("Content-Type", "text/css");
                 res.writeHead(200);
                 res.end(data);
-            })
+            });
             break;
         case "/submit": {
             let body = "";
 
             req.on("data", chunk => {
                 body += chunk.toString();
-            })
+            });
             req.on("end", () => {
                 try {
                     let response: SubmitResponse;

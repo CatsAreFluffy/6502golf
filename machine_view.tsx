@@ -28,5 +28,5 @@ export default function MachineView({ machine: m }: {machine: Machine}) {
                 <MemoryView memory={m.memory} />
             </RangeContext>
         </div>
-    )
+    );
 }
