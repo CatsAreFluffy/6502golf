@@ -184,6 +184,9 @@ function App() {
     };
 
     const access_locations: AccessInfo[] = useMemo(() => {
+        if(error_info.valid) {
+            return [];
+        }
         const access_locations: AccessInfo[] = [];
         for(const [address, access_type] of machine.last_access_map()) {
             const source = machine.sources.get(address);
@@ -198,7 +201,7 @@ function App() {
         }
         access_locations.sort((a, b) => a.start - b.start);
         return access_locations;
-    }, [machine]);
+    }, [machine, error_info.valid]);
 
     const view = editor_ref.current?.view;
     if(view !== undefined) {
