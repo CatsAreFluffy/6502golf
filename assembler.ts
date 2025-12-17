@@ -133,6 +133,9 @@ export default function assemble(program: Program): {memory: number[], sources: 
                 let {instruction, operand, start, end} = command.body;
                 let mode: AssembleAddressingMode = operand.mode;
                 if(branch_instructions.has(instruction)) {
+                    if(mode != "absolute") {
+                        throw new LocatedError(`Illegal addressing mode ${mode} for ${instruction}`, start, end);
+                    }
                     mode = "relative";
                 }
                 if(instruction.length == 4 && instruction[3] == "z") {
