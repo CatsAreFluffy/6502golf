@@ -196,6 +196,7 @@ function App() {
                 kind: access_type,
             });
         }
+        access_locations.sort((a, b) => a.start - b.start);
         return access_locations;
     }, [machine]);
 
