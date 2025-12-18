@@ -133,6 +133,27 @@ export default class Machine {
         this.n = value >= 128;
     }
 
+    set_p(p: number) {
+        this.c = (p & 0x01) > 0;
+        this.z = (p & 0x02) > 0;
+        this.i = (p & 0x04) > 0;
+        this.d = (p & 0x08) > 0;
+        this.v = (p & 0x40) > 0;
+        this.n = (p & 0x80) > 0;
+    }
+
+    get_p(b: boolean): number {
+        let p = 0x20;
+        p |= +this.c;
+        p |= +this.z << 1;
+        p |= +this.i << 2;
+        p |= +this.d << 3;
+        p |= +b << 4;
+        p |= +this.v << 6;
+        p |= +this.n << 7;
+        return p;
+    }
+
     adc(value: number) {
         const dec_result = this.a + value + +this.c;
         if(this.d) {
@@ -401,14 +422,7 @@ export default class Machine {
                 this.s = (this.s - 1) & 0xff;
                 this.write(0x100 + this.s, this.pc & 0xff, "data");
                 this.s = (this.s - 1) & 0xff;
-                let flags = 0x30;
-                flags |= +this.c;
-                flags |= +this.z << 1;
-                flags |= +this.i << 2;
-                flags |= +this.d << 3;
-                flags |= +this.v << 6;
-                flags |= +this.n << 7;
-                this.write(0x100 + this.s, flags, "data");
+                this.write(0x100 + this.s, this.get_p(true), "data");
                 this.s = (this.s - 1) & 0xff;
                 const pc_low = this.read(0xfffe, "data");
                 const pc_high = this.read(0xffff, "data");
@@ -574,14 +588,7 @@ export default class Machine {
                 this.s = (this.s - 1) & 0xff;
                 break;
             case "php": {
-                let flags = 0x30;
-                flags |= +this.c;
-                flags |= +this.z << 1;
-                flags |= +this.i << 2;
-                flags |= +this.d << 3;
-                flags |= +this.v << 6;
-                flags |= +this.n << 7;
-                this.write(0x100 + this.s, flags, "data");
+                this.write(0x100 + this.s, this.get_p(true), "data");
                 this.s = (this.s - 1) & 0xff;
                 break;
             }
@@ -593,13 +600,7 @@ export default class Machine {
             case "plp": {
                 this.read(0x100 + this.s, "dummy");
                 this.s = (this.s + 1) & 0xff;
-                const flags = this.read(0x100 + this.s, "data");
-                this.c = (flags & 0x01) > 0;
-                this.z = (flags & 0x02) > 0;
-                this.i = (flags & 0x04) > 0;
-                this.d = (flags & 0x08) > 0;
-                this.v = (flags & 0x40) > 0;
-                this.n = (flags & 0x80) > 0;
+                this.set_p(this.read(0x100 + this.s, "data"));
                 break;
             }
             case "rla": {
@@ -625,13 +626,7 @@ export default class Machine {
             case "rti": {
                 this.read(0x100 + this.s, "dummy");
                 this.s = (this.s + 1) & 0xff;
-                const flags = this.read(0x100 + this.s, "data");
-                this.c = (flags & 0x01) > 0;
-                this.z = (flags & 0x02) > 0;
-                this.i = (flags & 0x04) > 0;
-                this.d = (flags & 0x08) > 0;
-                this.v = (flags & 0x40) > 0;
-                this.n = (flags & 0x80) > 0;
+                this.set_p(this.read(0x100 + this.s, "data"));
                 this.s = (this.s + 1) & 0xff;
                 const pc_low = this.read(0x100 + this.s, "data");
                 this.s = (this.s + 1) & 0xff;
