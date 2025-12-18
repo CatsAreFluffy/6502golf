@@ -575,7 +575,7 @@ export default class Machine {
                 break;
             }
             case "nop":
-                this.read(effective_address, mode == "immediate" ? "instruction" : "dummy");
+                this.read(effective_address, "dummy");
                 break;
             case "nopa":
                 break;
