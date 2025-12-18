@@ -310,6 +310,46 @@ export default class Machine {
                 this.c = (shifted >> 8) > 0;
                 break;
             }
+            case "alr": {
+                const value = this.a & this.read(effective_address, "data");
+                this.c = (value & 1) > 0;
+                this.a = value >> 1;
+                this.set_nz(this.a);
+                break;
+            }
+            case "anc": {
+                this.a &= this.read(effective_address, "data");
+                this.set_nz(this.a);
+                this.c = this.n;
+                break;
+            }
+            case "ane": {
+                // Assuming magic constant 0xff
+                this.a = this.x & this.read(effective_address, "data");
+                this.set_nz(this.a);
+                break;
+            }
+            case "arr": {
+                const value = this.read(effective_address, "data");
+                const merge = this.a & value;
+                const result = (+this.c << 8 | merge) >> 1;
+                this.set_nz(result);
+                this.v = ((result & 0x40) ^ ((result & 0x20) << 1)) > 0;
+                if(this.d) {
+                    this.a = result;
+                    if((merge & 0x0f) > 0x04) {
+                        this.a = (this.a & 0xf0) + ((this.a + 0x06) & 0x0f);
+                    }
+                    if((merge & 0xf0) > 0x40) {
+                        this.a = ((this.a + 0x60) & 0xf0) + (this.a & 0x0f);
+                    }
+                    this.c = (merge & 0xf0) > 0x40;
+                } else {
+                    this.a = result;
+                    this.c = (result & 0x40) > 0;
+                }
+                break;
+            }
             case "bcc":
             case "bcs":
             case "beq":
@@ -399,6 +439,16 @@ export default class Machine {
                 this.c = (result & 0x100) == 0;
                 break;
             }
+            case "dcp": {
+                const value = this.read(effective_address, "data");
+                this.write(effective_address, value, "dummy");
+                const result = (value - 1) & 0xff;
+                this.write(effective_address, result, "data");
+                const cmp_result = this.a - result;
+                this.set_nz(cmp_result & 0xff);
+                this.c = cmp_result >= 256;
+                break;
+            }
             case "dec": {
                 const value = this.read(effective_address, "data");
                 this.write(effective_address, value, "dummy");
@@ -435,6 +485,34 @@ export default class Machine {
                 this.y = (this.y + 1) & 0xff;
                 this.set_nz(this.y);
                 break;
+            case "isc": {
+                const value = this.read(effective_address, "data");
+                this.write(effective_address, value, "dummy");
+                const result = (value + 1) & 0xff;
+                this.write(effective_address, result, "data");
+                const value2 = result ^ 0xff;
+                const dec_result = this.a + value2 + +this.c;
+                if(this.d) {
+                    this.v = ((this.a & 0x80) == (value2 & 0x80)) && ((this.a & 0x80) != (dec_result & 0x80));
+                    this.set_nz(dec_result & 0xff);
+                    let result_low = (this.a & 0x0f) - (result & 0x0f) + +this.c - 1;
+                    if(result_low < 0) {
+                        result_low = (result_low - 0x06) | ~0x0f;
+                    }
+                    let result2 = (this.a & 0xf0) - (result & 0xf0) + result_low;
+                    if(result2 < 0) {
+                        result2 -= 6 << 4;
+                    }
+                    this.a = result2 & 0xff;
+                    this.c = dec_result >= 256;
+                } else {
+                    this.v = ((this.a & 0x80) == (value2 & 0x80)) && ((this.a & 0x80) != (dec_result & 0x80));
+                    this.a = dec_result & 0xff;
+                    this.set_nz(this.a);
+                    this.c = dec_result >= 256;
+                }
+                break;
+            }
             case "jmp":
                 this.pc = effective_address;
                 break;
@@ -449,7 +527,13 @@ export default class Machine {
                 this.pc = (new_pch << 8) | new_pcl;
                 break;
             }
+            case "las":
+                this.a = this.x = this.s = this.read(effective_address, "data") & this.s;
+                this.set_nz(this.a);
+                break;
             case "lax":
+            case "lxa":
+                // Assuming magic constant 0xff for lxa
                 this.a = this.x = this.read(effective_address, "data");
                 this.set_nz(this.a);
                 break;
@@ -526,6 +610,47 @@ export default class Machine {
                 this.n = (flags & 0x80) > 0;
                 break;
             }
+            case "rla": {
+                const value = this.read(effective_address, "data");
+                this.write(effective_address, value, "dummy");
+                const shifted = value << 1 | +this.c;
+                const result = shifted & 0xff;
+                this.write(effective_address, result, "data");
+                this.c = (shifted >> 8) > 0;
+                this.a &= result;
+                this.set_nz(this.a);
+                break;
+            }
+            case "rra": {
+                const value = this.read(effective_address, "data");
+                this.write(effective_address, value, "dummy");
+                const result = (+this.c << 8 | value) >> 1;
+                this.write(effective_address, result, "data");
+                this.c = (value & 1) > 0;
+                const value2 = result;
+                const dec_result = this.a + value2 + +this.c;
+                if(this.d) {
+                    this.z = (dec_result & 0xff) == 0;
+                    let result_low = (this.a & 0x0f) + (result & 0x0f) + +this.c;
+                    if(result_low >= 10) {
+                        result_low = ((result_low & 0x0f) + 6) | 0x10;
+                    }
+                    let result2 = (this.a & 0xf0) + (result & 0xf0) + result_low;
+                    this.n = (result2 & 0x80) != 0;
+                    this.v = ((this.a & 0x80) == (result & 0x80)) && ((this.a & 0x80) != (result2 & 0x80));
+                    if(result2 >= (10 << 4)) {
+                        result2 += 6 << 4;
+                    }
+                    this.a = result2 & 0xff;
+                    this.c = result2 >= 256;
+                } else {
+                    this.v = ((this.a & 0x80) == (value2 & 0x80)) && ((this.a & 0x80) != (dec_result & 0x80));
+                    this.a = dec_result & 0xff;
+                    this.set_nz(this.a);
+                    this.c = dec_result >= 256;
+                }
+                break;
+            }
             case "rti": {
                 this.read(0x100 + this.s, "dummy");
                 this.s = (this.s + 1) & 0xff;
@@ -555,6 +680,9 @@ export default class Machine {
                 this.read_instruction();
                 break;
             }
+            case "sax":
+                this.write(effective_address, this.a & this.x, "data");
+                break;
             case "sbx": {
                 const ax = this.a & this.x;
                 const value = this.read(effective_address, "data");
@@ -562,6 +690,54 @@ export default class Machine {
                 this.x = result & 0xff;
                 this.set_nz(this.x);
                 this.c = result >= 256;
+                break;
+            }
+            case "sha": {
+                const value = this.a & this.x & (((effective_address - this.y) >> 8) + 1);
+                if((effective_address & 0xff) <= this.y) {
+                    this.write(effective_address, value, "data");
+                } else {
+                    this.write(effective_address, value, "data");
+                }
+                break;
+            }
+            case "shx": {
+                const value = this.x & (((effective_address - this.y) >> 8) + 1);
+                if((effective_address & 0xff) <= this.y) {
+                    this.write(effective_address, value, "data");
+                } else {
+                    this.write(effective_address, value, "data");
+                }
+                break;
+            }
+            case "shy": {
+                const value = this.y & (((effective_address - this.x) >> 8) + 1);
+                if((effective_address & 0xff) <= this.x) {
+                    this.write(effective_address, value, "data");
+                } else {
+                    this.write(effective_address, value, "data");
+                }
+                break;
+            }
+            case "slo": {
+                const value = this.read(effective_address, "data");
+                this.write(effective_address, value, "dummy");
+                const shifted = value << 1;
+                const result = shifted & 0xff;
+                this.write(effective_address, result, "data");
+                this.c = (shifted >> 8) > 0;
+                this.a |= result;
+                this.set_nz(this.a);
+                break;
+            }
+            case "sre": {
+                const value = this.read(effective_address, "data");
+                this.write(effective_address, value, "dummy");
+                const result = value >> 1;
+                this.write(effective_address, result, "data");
+                this.c = (value & 1) > 0;
+                this.a ^= result;
+                this.set_nz(this.a);
                 break;
             }
             case "sta":
@@ -573,6 +749,16 @@ export default class Machine {
             case "sty":
                 this.write(effective_address, this.y, "data");
                 break;
+            case "tas": {
+                this.s = this.a & this.x;
+                const value = this.a & this.x & (((effective_address - this.y) >> 8) + 1);
+                if((effective_address & 0xff) <= this.y) {
+                    this.write(effective_address, value, "data");
+                } else {
+                    this.write(effective_address, value, "data");
+                }
+                break;
+            }
             case "tax":
                 this.x = this.a;
                 this.set_nz(this.x);
@@ -596,8 +782,8 @@ export default class Machine {
                 this.a = this.y;
                 this.set_nz(this.a);
                 break;
-            default:
-                throw new Error(`Unknown instruction ${instruction} (address ${instruction_start.toString(16).padStart(4, "0")})`);
+            case "jam":
+                throw new Error(`JAM at address ${instruction_start.toString(16).padStart(4, "0")}`);
         }
     }
 
