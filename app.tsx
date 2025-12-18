@@ -155,7 +155,7 @@ function App() {
         }
         setMachine(new_machine);
         if(jams[new_machine.memory[new_machine.pc]]) {
-            const pass = judge(new_machine, current_challenge);
+            const pass = judge(new_machine.memory, current_challenge);
             if(pass) {
                 setJudgment(` (passed in ${new_machine.cycles} cycles)`);
             } else {

@@ -4,7 +4,7 @@
   "description": "6502 golfing website",
   "main": "index.ts",
   "scripts": {
-    "build": "./node_modules/.bin/esbuild page.tsx --bundle --outfile=out.js && ./node_modules/.bin/esbuild index.ts --bundle --platform=node --outfile=index.js",
+    "build": "./node_modules/.bin/esbuild page.tsx --bundle --outfile=out.js && ./node_modules/.bin/esbuild worker.ts --bundle --platform=node --outfile=worker.js && ./node_modules/.bin/esbuild index.ts --bundle --platform=node --outfile=index.js",
     "start": "node --run build && node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -26,6 +26,7 @@
     "@uiw/react-codemirror": "^4.25.3",
     "codemirror": "^6.0.2",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "workerpool": "^10.0.1"
   }
 }

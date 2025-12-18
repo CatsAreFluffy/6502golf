@@ -1,11 +1,13 @@
 import * as http from "http";
 import * as fs from "fs";
-import Machine from "./machine.ts";
 import { judge } from "./judge.ts";
 import challenges from "./challenges.ts";
 import { SubmitRequest, SubmitResponse } from "./api_types.ts";
+import workerpool from "workerpool";
+import { WorkerOutput } from "./worker.ts";
 const host = "localhost";
 const port: number = 8000;
+const pool = workerpool.pool(__dirname + "/worker.js");
 
 const requestListener = function(req: http.IncomingMessage, res: http.ServerResponse){
     console.log(req.url);
@@ -50,22 +52,19 @@ const requestListener = function(req: http.IncomingMessage, res: http.ServerResp
             req.on("data", chunk => {
                 body += chunk.toString();
             });
-            req.on("end", () => {
+            req.on("end", async () => {
                 try {
                     let response: SubmitResponse;
                     const {memory, challenge_name} = JSON.parse(body) as SubmitRequest;
-                    const machine = Machine.deserialize(memory);
-                    machine.track_accesses = false;
                     const challenge = challenges.get(challenge_name);
                     if(challenge === undefined) {
                         response = {pass: false, message: "Unknown challenge"};
                     } else {
-                        machine.run_until_jam(1 << 30);
-                        console.log(machine.cycles);
-                        if(machine.cycles > (1 << 30)) {
+                        const {memory: output_memory, cycles}: WorkerOutput = await pool.exec("worker", [memory]);
+                        if(cycles > (1 << 30)) {
                             response = {pass: false, message: "Too many cycles"};
                         } else {
-                            const pass = judge(machine, challenge);
+                            const pass = judge(output_memory, challenge);
                             response = {pass, message: pass ? "Passed" : "Incorrect output"};
                         }
                     }
