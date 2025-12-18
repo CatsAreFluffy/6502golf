@@ -102,7 +102,9 @@ for(let i = 0; i < 256; i++) {
     slot.set(assemble_mode, i);
     jams.push(assemble_instruction == "jam");
 }
-// Don't encode SBC as USBC
+// Use official NOP
+encodings.get("nop")!.set("implicit", 0xea);
+// Use official SBC
 encodings.get("sbc")!.set("immediate", 0xe9);
 // Allow USBC
 encodings.set("usbc", new Map([["immediate", 0xeb]]));
