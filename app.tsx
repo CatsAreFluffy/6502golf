@@ -100,6 +100,11 @@ function App() {
         setJudgment("");
     }, []);
 
+    const handleReset = () => {
+        setMachine(base_machine);
+        setJudgment("");
+    };
+
     const handleStep = () => {
         const new_machine = machine.clone();
         new_machine.step();
@@ -229,6 +234,7 @@ function App() {
             <b>{challenge_name}</b>: {current_challenge.description}<br />
             <ByteCount bytes={bytes} valid={!error_info.valid} />{judgment}
             <ReactCodeMirror ref={editor_ref} className="editor" value={code} onChange={handleChange} extensions={extensions}/>
+            <button onClick={handleReset}>Reset</button>
             <button onClick={handleStep}>Step</button>
             <button onClick={handleRunToJump}>Run until backwards jump</button>
             <button onClick={handleRunToBrk}>Run until BRK</button>
