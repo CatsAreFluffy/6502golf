@@ -133,6 +133,54 @@ export default class Machine {
         this.n = value >= 128;
     }
 
+    adc(value: number) {
+        const dec_result = this.a + value + +this.c;
+        if(this.d) {
+            this.z = (dec_result & 0xff) == 0;
+            let result_low = (this.a & 0x0f) + (value & 0x0f) + +this.c;
+            if(result_low >= 10) {
+                result_low = ((result_low & 0x0f) + 6) | 0x10;
+            }
+            let result = (this.a & 0xf0) + (value & 0xf0) + result_low;
+            this.n = (result & 0x80) != 0;
+            this.v = ((this.a & 0x80) == (value & 0x80)) && ((this.a & 0x80) != (result & 0x80));
+            if(result >= (10 << 4)) {
+                result += 6 << 4;
+            }
+            this.a = result & 0xff;
+            this.c = result >= 256;
+        } else {
+            this.v = ((this.a & 0x80) == (value & 0x80)) && ((this.a & 0x80) != (dec_result & 0x80));
+            this.a = dec_result & 0xff;
+            this.set_nz(this.a);
+            this.c = dec_result >= 256;
+        }
+    }
+
+    sbc(value: number) {
+        const value2 = value ^ 0xff;
+        const dec_result = this.a + value2 + +this.c;
+        if(this.d) {
+            this.v = ((this.a & 0x80) == (value2 & 0x80)) && ((this.a & 0x80) != (dec_result & 0x80));
+            this.set_nz(dec_result & 0xff);
+            let result_low = (this.a & 0x0f) - (value & 0x0f) + +this.c - 1;
+            if(result_low < 0) {
+                result_low = (result_low - 0x06) | ~0x0f;
+            }
+            let result = (this.a & 0xf0) - (value & 0xf0) + result_low;
+            if(result < 0) {
+                result -= 6 << 4;
+            }
+            this.a = result & 0xff;
+            this.c = dec_result >= 256;
+        } else {
+            this.v = ((this.a & 0x80) == (value2 & 0x80)) && ((this.a & 0x80) != (dec_result & 0x80));
+            this.a = dec_result & 0xff;
+            this.set_nz(this.a);
+            this.c = dec_result >= 256;
+        }
+    }
+
     step() {
         this.last_accesses = [];
         this.instructions++;
@@ -248,47 +296,11 @@ export default class Machine {
                 this.set_nz(this.a);
                 break;
             case "adc":
-            case "sbc": {
-                const value = this.read(effective_address, "data");
-                const value2 = instruction == "sbc" ? value ^ 0xff : value;
-                const dec_result = this.a + value2 + +this.c;
-                if(this.d) {
-                    if(instruction == "adc") {
-                        this.z = (dec_result & 0xff) == 0;
-                        let result_low = (this.a & 0x0f) + (value & 0x0f) + +this.c;
-                        if(result_low >= 10) {
-                            result_low = ((result_low & 0x0f) + 6) | 0x10;
-                        }
-                        let result = (this.a & 0xf0) + (value & 0xf0) + result_low;
-                        this.n = (result & 0x80) != 0;
-                        this.v = ((this.a & 0x80) == (value & 0x80)) && ((this.a & 0x80) != (result & 0x80));
-                        if(result >= (10 << 4)) {
-                            result += 6 << 4;
-                        }
-                        this.a = result & 0xff;
-                        this.c = result >= 256;
-                    } else {
-                        this.v = ((this.a & 0x80) == (value2 & 0x80)) && ((this.a & 0x80) != (dec_result & 0x80));
-                        this.set_nz(dec_result & 0xff);
-                        let result_low = (this.a & 0x0f) - (value & 0x0f) + +this.c - 1;
-                        if(result_low < 0) {
-                            result_low = (result_low - 0x06) | ~0x0f;
-                        }
-                        let result = (this.a & 0xf0) - (value & 0xf0) + result_low;
-                        if(result < 0) {
-                            result -= 6 << 4;
-                        }
-                        this.a = result & 0xff;
-                        this.c = dec_result >= 256;
-                    }
-                } else {
-                    this.v = ((this.a & 0x80) == (value2 & 0x80)) && ((this.a & 0x80) != (dec_result & 0x80));
-                    this.a = dec_result & 0xff;
-                    this.set_nz(this.a);
-                    this.c = dec_result >= 256;
-                }
+                this.adc(this.read(effective_address, "data"));
                 break;
-            }
+            case "sbc":
+                this.sbc(this.read(effective_address, "data"));
+                break;
             case "asla":
             case "rola": {
                 const cin = this.c && instruction == "rola";
@@ -490,27 +502,7 @@ export default class Machine {
                 this.write(effective_address, value, "dummy");
                 const result = (value + 1) & 0xff;
                 this.write(effective_address, result, "data");
-                const value2 = result ^ 0xff;
-                const dec_result = this.a + value2 + +this.c;
-                if(this.d) {
-                    this.v = ((this.a & 0x80) == (value2 & 0x80)) && ((this.a & 0x80) != (dec_result & 0x80));
-                    this.set_nz(dec_result & 0xff);
-                    let result_low = (this.a & 0x0f) - (result & 0x0f) + +this.c - 1;
-                    if(result_low < 0) {
-                        result_low = (result_low - 0x06) | ~0x0f;
-                    }
-                    let result2 = (this.a & 0xf0) - (result & 0xf0) + result_low;
-                    if(result2 < 0) {
-                        result2 -= 6 << 4;
-                    }
-                    this.a = result2 & 0xff;
-                    this.c = dec_result >= 256;
-                } else {
-                    this.v = ((this.a & 0x80) == (value2 & 0x80)) && ((this.a & 0x80) != (dec_result & 0x80));
-                    this.a = dec_result & 0xff;
-                    this.set_nz(this.a);
-                    this.c = dec_result >= 256;
-                }
+                this.sbc(result);
                 break;
             }
             case "jmp":
@@ -627,28 +619,7 @@ export default class Machine {
                 const result = (+this.c << 8 | value) >> 1;
                 this.write(effective_address, result, "data");
                 this.c = (value & 1) > 0;
-                const value2 = result;
-                const dec_result = this.a + value2 + +this.c;
-                if(this.d) {
-                    this.z = (dec_result & 0xff) == 0;
-                    let result_low = (this.a & 0x0f) + (result & 0x0f) + +this.c;
-                    if(result_low >= 10) {
-                        result_low = ((result_low & 0x0f) + 6) | 0x10;
-                    }
-                    let result2 = (this.a & 0xf0) + (result & 0xf0) + result_low;
-                    this.n = (result2 & 0x80) != 0;
-                    this.v = ((this.a & 0x80) == (result & 0x80)) && ((this.a & 0x80) != (result2 & 0x80));
-                    if(result2 >= (10 << 4)) {
-                        result2 += 6 << 4;
-                    }
-                    this.a = result2 & 0xff;
-                    this.c = result2 >= 256;
-                } else {
-                    this.v = ((this.a & 0x80) == (value2 & 0x80)) && ((this.a & 0x80) != (dec_result & 0x80));
-                    this.a = dec_result & 0xff;
-                    this.set_nz(this.a);
-                    this.c = dec_result >= 256;
-                }
+                this.adc(result);
                 break;
             }
             case "rti": {
