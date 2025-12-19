@@ -14,6 +14,112 @@ import { SubmitRequest, SubmitResponse } from "./api_types.ts";
 import ByteCount from "./byte_count.tsx";
 
 const default_code = `
+ ; Welcome to 6502 Golf!
+ ; Programs here are written in 6502 assembly.
+ ; If you're unfamiliar with that, this page has good descriptions of every
+ ; instruction: https://www.masswerk.at/6502/6502_instruction_set.html
+ ; So, for example, here's a program that computes 12+34.
+ ; (I recommend single-stepping using the Step button below.)
+ lda #12
+ clc
+ adc #34
+ ; The state of the processor and memory is shown below the editor.
+ ; Right now (after stepping 3 times), the A register is 2e, or in decimal, 46,
+ ; which is what you'd expect from 12+34.
+
+ ; Labels always appear at the beginning of a line, and conversely instructions
+ ; and other directives must always be indented.
+ ; So, here's a program that computes multiples of 3:
+ lda #0
+ ldx #0
+multiples_of_3
+ sta $1000,x
+ inx
+ clc
+ adc #3
+ bcc multiples_of_3
+
+ ; The memory view below shows the bytes the last instruction accessed. Red bytes
+ ; are opcodes and operand addresses, and blue bytes are the operands themselves.
+ ; There's also green for pointers in indirect modes, and gray for unused bytes.
+ ldx #1
+ jmp 0
+ org 0
+ ; The following instruction shows all of those at once.
+ lda (2,x)
+ rts
+ word 5
+ byte $42
+ ; You can also see accesses in the editor. Right now, the above four lines should
+ ; be highlighted in each of the four colors.
+
+ ; Get back on track. Execution continues at line 64.
+ org $100
+ word $300-1
+
+ ; The directives supported by the assembler are org (which sets which location in
+ ; memory to assemble to), byte, word, ds.b, ds.w (which output constant bytes or
+ ; words), res.b, res.w, dc.b, dc.w (which fill some amount of memory with zeros),
+ ; and equ or = (which sets a label to a given value).
+ org $20
+mul_in_1 equ 21
+mul_in_2 = 5
+mul_out res.b 1
+
+ ; Execution starts from the reset vector stores at $fffc, which defaults to
+ ; $0200. If you want to start from a different location, put some other address
+ ; there. (This program uses the default location, so the following isn't strictly
+ ; necessary.)
+ org $fffc
+ word $0200
+
+ ; You can enter numbers in different bases using $ or 0x for hexadecimal (which
+ ; I've already done a few times), 0o for octal, or 0b for binary.
+ org $300
+ lda #99
+ cmp #$63
+ bne fail
+ cmp #0o143
+ bne fail
+ cmp #0b01100011
+ bne fail
+ jmp pass
+fail
+ jam
+pass
+
+ ; You can use the usual arithmetic operators. Since parentheses are used for the
+ ; indirect modes, use brackets for grouping. Currently, all operators have the same
+ ; precedence. I might change that later.
+ lda 16*65/2-[3+1]
+ eor #$22
+
+ ; To use zeropage addressing modes, add a z at the end of the instruction name.
+ lda #0
+ ldx #mul_in_2
+multiply
+ clc
+ adc #mul_in_1
+ dex
+ bne multiply
+ staz mul_out
+
+ ; All illegal opcodes are supported, using the mnemonics from the page above.
+illegal_output_1 equ $fe00
+illegal_output_2 equ $fe20
+ lxa #$aa
+ sha illegal_output_1,y
+ sax illegal_output_2
+illegal_loop
+ iny
+ sbx #1
+ shx illegal_output_1,y
+ tas illegal_output_2,y
+ dcp $103e
+ bne illegal_loop
+
+ ; Terminate your program with the "jam" instruction.
+ jam
 `.replace(/^\n|\n$/g,"");
 
 function assemble_source(src: string): [Machine | undefined, ErrorInfo] {
