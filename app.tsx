@@ -276,21 +276,26 @@ function App() {
         setSubmitJudgment("...");
         const memory = base_machine.serialize_memory();
         const request: SubmitRequest = {challenge_name, memory};
-        const response = await fetch("/submit",
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(request),
+        try {
+            const response = await fetch("/submit",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(request),
+                }
+            );
+            const body: SubmitResponse = await response.json();
+            const {pass, message} = body;
+            if(pass) {
+                setSubmitJudgment(`Passed!`);
+            } else {
+                setSubmitJudgment(`Failed (${message})`);
             }
-        );
-        const body: SubmitResponse = await response.json();
-        const {pass, message} = body;
-        if(pass) {
-            setSubmitJudgment(`Passed!`);
-        } else {
-            setSubmitJudgment(`Failed (${message})`);
+        } catch(e) {
+            console.error(e);
+            setSubmitJudgment("Error");
         }
     };
 

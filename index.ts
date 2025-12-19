@@ -72,8 +72,9 @@ const requestListener = function(req: http.IncomingMessage, res: http.ServerResp
                     res.writeHead(200);
                     res.end(JSON.stringify(response));
                 } catch {
+                    res.setHeader("Content-Type", "application/json");
                     res.writeHead(500);
-                    res.end("Internal server error");
+                    res.end(JSON.stringify({pass: false, message: "Internal server error"}));
                 }
             });
 
