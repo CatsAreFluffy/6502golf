@@ -21,7 +21,7 @@ function lex(input: string): Token[] {
     let position = 0;
     let start_of_line = true;
     const ret: Token[] = [];
-    const regexp = /([ \t]+|(?:[ \t]*(?:;[^\n]*)?\n)+(?:[ \t]+$)?|[0-9a-zA-Z_.$]+|'(?:[^\n\\']|\\.)'|<<|>>|[()[\]+-/*|^&~,#:<>=])/sy;
+    const regexp = /([ \t]+|;[^\n]*$|(?:[ \t]*(?:;[^\n]*)?\n)+|[0-9a-zA-Z_.$]+|'(?:[^\n\\']|\\.)'|<<|>>|[()[\]+-/*|^&~,#:<>=])/sy;
     regexp.lastIndex = 0;
     while(regexp.lastIndex < input.length) {
         const last_index = regexp.lastIndex;
@@ -36,7 +36,7 @@ function lex(input: string): Token[] {
 
         const token = match[1];
         // simplify whitespace tokens
-        if(/\s/.exec(token)) {
+        if(/\s|;/.exec(token)) {
             if(token.includes("\n")) {
                 ret.push({token, position, kind: "newline"});
             }
