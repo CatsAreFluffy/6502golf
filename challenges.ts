@@ -3,8 +3,8 @@ export type Challenge = {
     output: () => number[],
 };
 
-export const EulerConstant: Challenge = {
-    description: "Calculate the first 1001 digits of Euler's constant.",
+export const EulerNumber: Challenge = {
+    description: "Calculate the first 1001 digits of Euler's number.",
     output: () => {
         let output = "2.";
         const buffer = new Array(500).fill(1);
@@ -65,7 +65,7 @@ export const CountTo1000: Challenge = {
 
 const challenges = new Map([
     ["Count to 1000", CountTo1000],
-    ["Euler's Constant", EulerConstant],
+    ["Euler's Number", EulerNumber],
     ["Thue-Morse Sequence", ThueMorse],
 ]);
 
