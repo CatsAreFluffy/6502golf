@@ -4,7 +4,7 @@ export type Challenge = {
 };
 
 export const EulerConstant: Challenge = {
-    description: "Calculate the first 1001 digits of Euler's constant. Output is read starting from address 0x8000, and ends at a null byte.",
+    description: "Calculate the first 1001 digits of Euler's constant.",
     output: () => {
         let output = "2.";
         const buffer = new Array(500).fill(1);
@@ -30,7 +30,7 @@ export const EulerConstant: Challenge = {
 };
 
 export const ThueMorse: Challenge = {
-    description: "Calculate the first 1024 entries in the Thue-Morse sequence. Output is read starting from address 0x8000, and ends at a null byte.",
+    description: "Calculate the first 1024 entries in the Thue-Morse sequence.",
     output: () => {
         const output = [0x30, 0x31];
         for(let i = 1; i < 512; i++) {
@@ -46,7 +46,7 @@ export const ThueMorse: Challenge = {
 };
 
 export const CountTo1000: Challenge = {
-    description: "Print the integers from 1 to 1000 inclusive, separated with newlines. Output is read starting from address 0x8000, and ends at a null byte.",
+    description: "Print the integers from 1 to 1000 inclusive, separated with newlines.",
     output: () => {
         const output = [];
         for(let i = 1; i <= 1000; i++) {
