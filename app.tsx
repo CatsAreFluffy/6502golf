@@ -28,7 +28,7 @@ const default_code = `
  ; which is what you'd expect from 12+34.
 
  ; Labels always appear at the beginning of a line, and conversely instructions
- ; and other directives must always be indented.
+ ; and other directives must always be indented. Colons after labels are optional.
  ; So, here's a program that computes multiples of 3:
  lda #0
  ldx #0
@@ -59,14 +59,14 @@ multiples_of_3
 
  ; The directives supported by the assembler are org (which sets which location in
  ; memory to assemble to), byte, word, ds.b, ds.w (which output constant bytes or
- ; words), res.b, res.w, dc.b, dc.w (which fill some amount of memory with zeros),
- ; and equ or = (which sets a label to a given value).
+ ; words), res.b, res.w, dc.b, dc.w (which reserve some amount of memory), and equ
+ ; or = (which set a label to a given value).
  org $20
 mul_in_1 equ 21
 mul_in_2 = 5
 mul_out res.b 1
 
- ; Execution starts from the reset vector stores at $fffc, which defaults to
+ ; Execution starts from the reset vector stored at $fffc, which defaults to
  ; $0200. If you want to start from a different location, put some other address
  ; there. (This program uses the default location, so the following isn't strictly
  ; necessary.)
@@ -74,7 +74,7 @@ mul_out res.b 1
  word $0200
 
  ; You can enter numbers in different bases using $ or 0x for hexadecimal (which
- ; I've already done a few times), 0o for octal, or 0b for binary.
+ ; I've already done a few times above), 0o for octal, or 0b for binary.
  org $300
  lda #99
  cmp #$63
@@ -88,11 +88,19 @@ fail
  jam
 pass
 
- ; You can use the usual arithmetic operators. Since parentheses are used for the
- ; indirect modes, use brackets for grouping. Currently, all operators have the same
- ; precedence. I might change that later.
+ ; The usual operators (+-*/%&^|~ and shifts) are supported. Since parentheses are
+ ; used for the indirect modes, use brackets for grouping. Currently, all operators
+ ; have the same precedence. I might change that later.
  lda 16*65/2-[3+1]
  eor #$22
+
+ ; You can also use < and > to get the first and second bytes of a value respectively.
+ lda #<target
+ sta $fffe
+ lda #>target
+ sta $ffff
+ brk
+target
 
  ; To use zeropage addressing modes, add a z at the end of the instruction name.
  lda #0
