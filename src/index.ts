@@ -14,7 +14,7 @@ const requestListener = function(req: http.IncomingMessage, res: http.ServerResp
     switch(req.url) {
         case "/":
         case "/index.html":
-            fs.readFile("index.html", "utf8", (err, data) => {
+            fs.readFile("src/index.html", "utf8", (err, data) => {
                 if(err) {
                     console.error("Error:", err);
                     return;
@@ -25,7 +25,7 @@ const requestListener = function(req: http.IncomingMessage, res: http.ServerResp
             });
             break;
         case "/out.js":
-            fs.readFile("out.js", "utf8", (err, data) => {
+            fs.readFile("dist/out.js", "utf8", (err, data) => {
                 if(err) {
                     console.error("Error:", err);
                     return;
@@ -36,7 +36,7 @@ const requestListener = function(req: http.IncomingMessage, res: http.ServerResp
             });
             break;
         case "/style.css":
-            fs.readFile("style.css", "utf8", (err, data) => {
+            fs.readFile("src/style.css", "utf8", (err, data) => {
                 if(err) {
                     console.error("Error:", err);
                     return;

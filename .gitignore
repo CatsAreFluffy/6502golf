@@ -1,4 +1,2 @@
 node_modules
-index.js
-out.js
-worker.js
+dist/
