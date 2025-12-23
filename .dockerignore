@@ -1,0 +1,8 @@
+.dockerignore
+.git
+.gitignore
+compose.yml
+dist/
+eslint.config.mts
+Dockerfile
+node_modules/

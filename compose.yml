@@ -1,0 +1,9 @@
+services:
+  app:
+    build: .
+    command: sh -c "npm i && reflex -R 'dist/*' -s -- node --run start"
+    ports:
+      - 8000:8000
+    working_dir: /app
+    volumes:
+      - ./:/app
