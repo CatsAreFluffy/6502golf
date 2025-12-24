@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import ReactCodeMirror, { ReactCodeMirrorRef, ViewUpdate } from "@uiw/react-codemirror";
 
 import { lex, LocatedError, parse } from "./parser.ts";
@@ -327,16 +327,18 @@ function App() {
         return access_locations;
     }, [machine, error_info.valid]);
 
-    const view = editor_ref.current?.view;
-    if(view !== undefined) {
-        console.log("dispatch");
-        view.dispatch({
-            effects: [
-                set_error_field.of(error_info),
-                set_access_highlight_field.of(access_locations)
-            ],
-        });
-    }
+    useEffect(() => {
+        const view = editor_ref.current?.view;
+        if(view !== undefined) {
+            console.log("dispatch");
+            view.dispatch({
+                effects: [
+                    set_error_field.of(error_info),
+                    set_access_highlight_field.of(access_locations)
+                ],
+            });
+        }
+    }, [error_info, access_locations]);
 
     const extensions = [
         error_field.init(() => error_info),
