@@ -66,6 +66,12 @@ mul_in_1 equ 21
 mul_in_2 = 5
 mul_out res.b 1
 
+ ; The bytecount used for scoring doesn't count zero bytes. So, the following doesn't
+ ; affect it at all.
+ word 0
+ byte 0
+ res.w 0
+
  ; Execution starts from the reset vector stored at $fffc, which defaults to
  ; $0200. If you want to start from a different location, put some other address
  ; there. (This program uses the default location, so the following isn't strictly
