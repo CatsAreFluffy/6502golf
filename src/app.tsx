@@ -157,10 +157,20 @@ function assemble_source(src: string): [Machine | undefined, ErrorInfo] {
 }
 
 function App() {
-    const [username, setUsername] = useState("");
+    const [username, setUsername] = useState(
+        () => {
+            const saved_username = localStorage.getItem("6502_golf_username");
+            if(saved_username) {
+                return saved_username;
+            }
+            return "";
+        }
+    );
 
     const handleChangeUsername = useCallback((e: ChangeEvent<HTMLInputElement>) => {
-        setUsername(e.target.value);
+        const username = e.target.value;
+        localStorage.setItem("6502_golf_username", username);
+        setUsername(username);
     }, []);
 
     const [code, setCode] = useState(
@@ -176,13 +186,20 @@ function App() {
     const editor_ref = useRef<ReactCodeMirrorRef | null>(null);
 
     const [challenge_name, setChallengeName] = useState(
-        () => challenges.keys().next().value!
+        () => {
+            const saved_challenge_name = localStorage.getItem("6502_golf_challenge");
+            if(saved_challenge_name && challenges.has(saved_challenge_name)) {
+                return saved_challenge_name;
+            }
+            return challenges.keys().next().value!;
+        }
     );
     
     const current_challenge = challenges.get(challenge_name)!;
 
-    const handleSelectChallenge = (challenge: string) => () => {
-        setChallengeName(challenge);
+    const handleSelectChallenge = (challenge_name: string) => () => {
+        localStorage.setItem("6502_golf_challenge", challenge_name);
+        setChallengeName(challenge_name);
     };
 
     const challenge_buttons = [];
