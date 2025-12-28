@@ -67,7 +67,7 @@ const requestListener = async function(req: http.IncomingMessage, res: http.Serv
                         } else {
                             const pass = judge(output_memory, challenge);
                             response = {pass, message: pass ? "Passed" : "Incorrect output"};
-                            if(pass) {
+                            if(pass && username !== "") {
                                 await sql.begin(async (sql) => {
                                     const obsolete_scores = await sql`
                                         delete from scores
