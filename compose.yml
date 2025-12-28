@@ -7,3 +7,14 @@ services:
     working_dir: /app
     volumes:
       - ./:/app
+
+  db:
+    image: postgres:18.1-alpine3.23
+    environment:
+      POSTGRES_DB: 6502golf
+      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_INITDB_ARGS: "--locale-provider=icu --icu-locale=en-US"
+    ports:
+      - 5432:5432
+    volumes:
+      - ./sql:/docker-entrypoint-initdb.d

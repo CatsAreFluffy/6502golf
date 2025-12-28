@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactCodeMirror, { ReactCodeMirrorRef, ViewUpdate } from "@uiw/react-codemirror";
 
 import { lex, LocatedError, parse } from "./parser.ts";
@@ -157,6 +157,12 @@ function assemble_source(src: string): [Machine | undefined, ErrorInfo] {
 }
 
 function App() {
+    const [username, setUsername] = useState("");
+
+    const handleChangeUsername = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+        setUsername(e.target.value);
+    }, []);
+
     const [code, setCode] = useState(
         () => {
             const local_code = localStorage.getItem("6502_golf_code");
@@ -283,7 +289,7 @@ function App() {
     const handleSubmit = async () => {
         setSubmitJudgment("...");
         const memory = base_machine.serialize_memory();
-        const request: SubmitRequest = {challenge_name, memory};
+        const request: SubmitRequest = {username, challenge_name, memory};
         try {
             const response = await fetch("/submit",
                 {
@@ -353,6 +359,7 @@ function App() {
             <h1>6502 Golf</h1>
             Output is read as ASCII from 0x8000, ending at a null byte. Use the <span className="viewer">jam</span> instruction to end your program.<br />
             Solutions are not saved. Keep copies elsewhere.
+            <div>Name for leaderboard: <input value={username} onChange={handleChangeUsername}/></div>
             <div>Challenges: {challenge_buttons}</div>
             <b>{challenge_name}</b>: {current_challenge.description}<br />
             <ByteCount bytes={bytes} valid={!error_info.valid} />{judgment}

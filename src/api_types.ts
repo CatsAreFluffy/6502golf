@@ -1,4 +1,5 @@
 export type SubmitRequest = {
+    username: string,
     challenge_name: string,
     memory: Record<number, number[]>,
 };
