@@ -86,22 +86,24 @@ function App() {
     }, [challenge_name, scoring, max_bytes]);
 
     const header = <>
+        <h1>6502 Golf</h1>
+        <a href="/index.html">Back to the game</a>
         <div>Challenges: {challenge_buttons}</div>
         <div>Scoring: {scoring_buttons}</div>
     </>;
     switch(load_state.status) {
         case "init":
-            return <>{header}</>;
+            return <div className="app">{header}</div>;
         case "loading":
-            return <>{header}<div>Loading...</div></>;
+            return <div className="app">{header}<div>Loading...</div></div>;
         case "failed":
-            return <>{header}<div>Failed :(</div></>;
+            return <div className="app">{header}<div>Failed to load :(</div></div>;
         case "ready": {
             const rows = [<tr key={0}><td>User</td><td>Bytes</td><td>Cycles</td></tr>];
             for(const {username, bytes, cycles} of load_state.response) {
                 rows.push(<tr key={rows.length}><td>{username}</td><td>{bytes}</td><td>{cycles}</td></tr>);
             }
-            return <>{header}<table><tbody>{rows}</tbody></table></>;
+            return <div className="app">{header}<table className="leaderboard"><tbody>{rows}</tbody></table></div>;
         }
     }
 }

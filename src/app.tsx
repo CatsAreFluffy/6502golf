@@ -383,6 +383,7 @@ function App() {
             Output is read as ASCII from 0x8000, ending at a null byte. Use the <span className="viewer">jam</span> instruction to end your program.<br />
             Solutions are not saved. Keep copies elsewhere.
             <div>Name for leaderboard: <input value={username} onChange={handleChangeUsername}/></div>
+            <a href="/leaderboard.html">View leaderboard</a>
             <div>Challenges: {challenge_buttons}</div>
             <b>{challenge_name}</b>: {current_challenge.description}<br />
             <ByteCount bytes={bytes} valid={!error_info.valid} />{judgment}

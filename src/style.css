@@ -52,3 +52,12 @@
 .error {
     background-color: red;
 }
+
+.leaderboard, .leaderboard td {
+    border-style: solid;
+    border-color: black;
+}
+
+.leaderboard td {
+    width: 10em;
+}
