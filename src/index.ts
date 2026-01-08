@@ -33,6 +33,9 @@ const requestListener = async function(req: http.IncomingMessage, res: http.Serv
         case "/out.js":
             await sendFile(res, "dist/out.js", "text/javascript");
             break;
+        case "/out.js.map":
+            await sendFile(res, "dist/out.js.map", "text/javascript");
+            break;
         case "/style.css":
             await sendFile(res, "src/style.css", "text/css");
             break;
@@ -103,6 +106,10 @@ const requestListener = async function(req: http.IncomingMessage, res: http.Serv
         }
         case "/leaderboard.js": {
             await sendFile(res, "dist/leaderboard.js", "text/javascript");
+            break;
+        }
+        case "/leaderboard.js.map": {
+            await sendFile(res, "dist/leaderboard.js.map", "text/javascript");
             break;
         }
         case "/leaderboard": {
