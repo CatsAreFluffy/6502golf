@@ -1,5 +1,5 @@
 import * as http from "http";
-import * as fs from "fs";
+import { promises as fsPromises } from "fs";
 import { judge } from "./judge.ts";
 import challenges from "./challenges.ts";
 import { LeaderboardRequest, LeaderboardResponse, LeaderboardRow, SubmitRequest, SubmitResponse } from "./api_types.ts";
@@ -10,48 +10,48 @@ const host = "localhost";
 const port: number = 8000;
 const pool = workerpool.pool(__dirname + "/worker.js");
 
+async function sendFile(res: http.ServerResponse, filePath: string, contentType: string) {
+    try {
+        const data = await fsPromises.readFile(filePath, "utf8");
+        res.setHeader("Content-Type", contentType);
+        res.writeHead(200);
+        res.end(data);
+    } catch (err) {
+        console.error("Error reading file", filePath, err);
+        res.writeHead(500);
+        res.end("Internal server error");
+    }
+}
+
 const requestListener = async function(req: http.IncomingMessage, res: http.ServerResponse){
     console.log(req.url);
     switch(req.url) {
         case "/":
         case "/index.html":
-            fs.readFile("src/index.html", "utf8", (err, data) => {
-                if(err) {
-                    console.error("Error:", err);
-                    return;
-                }
-                res.setHeader("Content-Type", "text/html");
-                res.writeHead(200);
-                res.end(data);
-            });
+            await sendFile(res, "src/index.html", "text/html");
             break;
         case "/out.js":
-            fs.readFile("dist/out.js", "utf8", (err, data) => {
-                if(err) {
-                    console.error("Error:", err);
-                    return;
-                }
-                res.setHeader("Content-Type", "text/javascript");
-                res.writeHead(200);
-                res.end(data);
-            });
+            await sendFile(res, "dist/out.js", "text/javascript");
             break;
         case "/style.css":
-            fs.readFile("src/style.css", "utf8", (err, data) => {
-                if(err) {
-                    console.error("Error:", err);
-                    return;
-                }
-                res.setHeader("Content-Type", "text/css");
-                res.writeHead(200);
-                res.end(data);
-            });
+            await sendFile(res, "src/style.css", "text/css");
             break;
         case "/submit": {
-            let body = "";
+            if (req.method !== "POST") {
+                res.writeHead(405);
+                res.end();
+                break;
+            }
 
+            let body = "";
             req.on("data", chunk => {
                 body += chunk.toString();
+                // simple body size guard
+                if (body.length > 1_000_000) {
+                    res.writeHead(413);
+                    res.end("Request entity too large");
+                    req.socket.destroy();
+                }
             });
             req.on("end", async () => {
                 try {
@@ -98,34 +98,28 @@ const requestListener = async function(req: http.IncomingMessage, res: http.Serv
             break;
         }
         case "/leaderboard.html": {
-            fs.readFile("src/leaderboard.html", "utf8", (err, data) => {
-                if(err) {
-                    console.error("Error:", err);
-                    return;
-                }
-                res.setHeader("Content-Type", "text/html");
-                res.writeHead(200);
-                res.end(data);
-            });
+            await sendFile(res, "src/leaderboard.html", "text/html");
             break;
         }
         case "/leaderboard.js": {
-            fs.readFile("dist/leaderboard.js", "utf8", (err, data) => {
-                if(err) {
-                    console.error("Error:", err);
-                    return;
-                }
-                res.setHeader("Content-Type", "text/javascript");
-                res.writeHead(200);
-                res.end(data);
-            });
+            await sendFile(res, "dist/leaderboard.js", "text/javascript");
             break;
         }
         case "/leaderboard": {
-            let body = "";
+            if (req.method !== "POST") {
+                res.writeHead(405);
+                res.end();
+                break;
+            }
 
+            let body = "";
             req.on("data", chunk => {
                 body += chunk.toString();
+                if (body.length > 1_000_000) {
+                    res.writeHead(413);
+                    res.end("Request entity too large");
+                    req.socket.destroy();
+                }
             });
             req.on("end", async () => {
                 try {
