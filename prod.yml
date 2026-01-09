@@ -4,6 +4,9 @@ services:
       context: .
       dockerfile: prod.Dockerfile
     command: node dist/index.js
+    environment:
+      POSTGRES_DB: 6502golf
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - 80:8000
     working_dir: /app
@@ -12,7 +15,6 @@ services:
     image: postgres:18.1-alpine3.23
     environment:
       POSTGRES_DB: 6502golf
-      POSTGRES_USER: 6502golf
       # Set POSTGRES_PASSWORD in your environment or override when deploying
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_INITDB_ARGS: "--locale-provider=icu --icu-locale=en-US"
