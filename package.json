@@ -5,6 +5,7 @@
   "main": "src/index.ts",
   "scripts": {
     "build": "./node_modules/.bin/esbuild src/page.tsx --bundle --minify --sourcemap --outfile=dist/out.js && ./node_modules/.bin/esbuild src/leaderboard.tsx --bundle --minify --sourcemap --outfile=dist/leaderboard.js && ./node_modules/.bin/esbuild src/worker.ts --bundle --minify --sourcemap --platform=node --outfile=dist/worker.js && ./node_modules/.bin/esbuild src/index.ts --bundle --minify --sourcemap --platform=node --outfile=dist/index.js",
+    "build_prod": "./node_modules/.bin/esbuild src/page.tsx --bundle --outfile=dist/out.js && ./node_modules/.bin/esbuild src/leaderboard.tsx --bundle --outfile=dist/leaderboard.js && ./node_modules/.bin/esbuild src/worker.ts --bundle --platform=node --outfile=dist/worker.js && ./node_modules/.bin/esbuild src/index.ts --bundle --platform=node --outfile=dist/index.js",
     "start": "node --run build && node dist/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

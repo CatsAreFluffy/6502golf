@@ -6,4 +6,6 @@ dist/
 eslint.config.mts
 Dockerfile
 node_modules/
+prod.Dockerfile
+prod.yml
 sql/
