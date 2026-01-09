@@ -12,7 +12,9 @@ services:
     image: postgres:18.1-alpine3.23
     environment:
       POSTGRES_DB: 6502golf
-      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_USER: 6502golf
+      # Set POSTGRES_PASSWORD in your environment or override when deploying
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_INITDB_ARGS: "--locale-provider=icu --icu-locale=en-US"
     volumes:
       - ./sql:/docker-entrypoint-initdb.d

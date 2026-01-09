@@ -9,6 +9,16 @@ import sql from "./db.ts";
 const host = "localhost";
 const port: number = 8000;
 const pool = workerpool.pool(__dirname + "/worker.js");
+// Simple in-memory per-IP rate limiter
+const rateLimitMap = new Map<string, { count: number; windowStart: number }>();
+const RATE_LIMIT_MAX = 10; // max requests
+const RATE_LIMIT_WINDOW = 60_000; // per 60s
+
+function getClientIp(req: http.IncomingMessage) {
+    const forwarded = req.headers["x-forwarded-for"];
+    if (typeof forwarded === "string") return forwarded.split(",")[0].trim();
+    return req.socket && req.socket.remoteAddress ? String(req.socket.remoteAddress) : "unknown";
+}
 
 async function sendFile(res: http.ServerResponse, filePath: string, contentType: string) {
     try {
@@ -45,6 +55,20 @@ const requestListener = async function(req: http.IncomingMessage, res: http.Serv
                 res.end();
                 break;
             }
+            // rate-limit per IP
+            const ip = getClientIp(req);
+            const now = Date.now();
+            const entry = rateLimitMap.get(ip);
+            if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW) {
+                rateLimitMap.set(ip, { count: 1, windowStart: now });
+            } else {
+                entry.count++;
+                if (entry.count > RATE_LIMIT_MAX) {
+                    res.writeHead(429);
+                    res.end("Too many requests");
+                    break;
+                }
+            }
 
             let body = "";
             req.on("data", chunk => {
@@ -59,18 +83,41 @@ const requestListener = async function(req: http.IncomingMessage, res: http.Serv
             req.on("end", async () => {
                 try {
                     let response: SubmitResponse;
-                    const {username, memory, challenge_name} = JSON.parse(body) as SubmitRequest;
+                    const parsed = JSON.parse(body) as SubmitRequest;
+                    // Basic validation/sanitization
+                    const username = typeof parsed.username === "string" ? parsed.username.slice(0, 39) : "";
+                    const challenge_name = typeof parsed.challenge_name === "string" ? parsed.challenge_name : "";
+                    const memory = parsed.memory;
+
                     const challenge = challenges.get(challenge_name);
-                    if(challenge === undefined) {
-                        response = {pass: false, message: "Unknown challenge"};
-                    } else {
-                        const {memory: output_memory, initial_bytes, cycles}: WorkerOutput = await pool.exec("worker", [memory]);
-                        if(cycles > (1 << 30)) {
-                            response = {pass: false, message: "Too many cycles"};
+                    if (challenge === undefined) {
+                        response = { pass: false, message: "Unknown challenge" };
+                        res.setHeader("Content-Type", "application/json");
+                        res.writeHead(200);
+                        res.end(JSON.stringify(response));
+                        return;
+                    }
+
+                    // Shallow validation only: ensure memory is an object.
+                    // Detailed structural validation is performed inside the worker
+                    // by Machine.deserialize to avoid duplication and to centralize
+                    // error reporting.
+                    if (typeof memory !== "object" || memory === null) {
+                        throw new Error("Invalid memory");
+                    }
+
+                    // Run worker with a timeout to avoid long CPU usage
+                    try {
+                        const execOptions: unknown = { timeout: 30_000 }; // 30s timeout
+                        // narrow pool type to avoid `any` usage in assertions
+                        const poolExec = pool as unknown as { exec: (fn: string, args: unknown[], opts?: unknown) => Promise<WorkerOutput> };
+                        const { memory: output_memory, initial_bytes, cycles }: WorkerOutput = await poolExec.exec("worker", [memory], execOptions);
+                        if (cycles > (1 << 30)) {
+                            response = { pass: false, message: "Too many cycles" };
                         } else {
                             const pass = judge(output_memory, challenge);
-                            response = {pass, message: pass ? "Passed" : "Incorrect output"};
-                            if(pass && username !== "") {
+                            response = { pass, message: pass ? "Passed" : "Incorrect output" };
+                            if (pass && username !== "") {
                                 await sql.begin(async (sql) => {
                                     const obsolete_scores = await sql`
                                         delete from scores
@@ -86,15 +133,29 @@ const requestListener = async function(req: http.IncomingMessage, res: http.Serv
                                 });
                             }
                         }
+                    } catch (err: unknown) {
+                        if (typeof err === "object" && err !== null) {
+                            const e = err as { message?: unknown };
+                            if (typeof e.message === "string" && e.message.toLowerCase().includes("timeout")) {
+                                response = { pass: false, message: "Execution timed out" };
+                            } else {
+                                console.error("Worker error:", err);
+                                throw err;
+                            }
+                        } else {
+                            console.error("Worker error:", err);
+                            throw err;
+                        }
                     }
+
                     res.setHeader("Content-Type", "application/json");
                     res.writeHead(200);
                     res.end(JSON.stringify(response));
-                } catch(e) {
+                } catch (e) {
                     console.error(e);
                     res.setHeader("Content-Type", "application/json");
                     res.writeHead(500);
-                    res.end(JSON.stringify({pass: false, message: "Internal server error"}));
+                    res.end(JSON.stringify({ pass: false, message: "Internal server error" }));
                 }
             });
 
