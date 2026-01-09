@@ -34,7 +34,8 @@ async function sendFile(res: http.ServerResponse, filePath: string, contentType:
 }
 
 const requestListener = async function(req: http.IncomingMessage, res: http.ServerResponse){
-    console.log(req.url);
+    const ip = getClientIp(req);
+    console.log(req.url, req.method, ip);
     switch(req.url) {
         case "/":
         case "/index.html":
@@ -56,7 +57,6 @@ const requestListener = async function(req: http.IncomingMessage, res: http.Serv
                 break;
             }
             // rate-limit per IP
-            const ip = getClientIp(req);
             const now = Date.now();
             const entry = rateLimitMap.get(ip);
             if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW) {
