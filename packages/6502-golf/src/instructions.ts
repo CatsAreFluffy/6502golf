@@ -63,7 +63,7 @@ const assemble_modes: Map<AddressingMode, AssembleAddressingMode> = new Map([
 type CommonInstruction = "brk" | "ora" | "jam" | "slo" | "nop" | "asl" | "php" | "anc" | "bpl" | "clc" | "jsr" | "and" | "rla" | "bit" | "rol" | "plp" | "bmi" | "sec" | "rti" | "eor" | "sre" | "pha" | "alr" | "jmp" | "lsr" | "bvc" | "cli" | "rts" | "adc" | "rra" | "ror" | "pla" | "arr" | "bvs" | "sei" | "sta" | "sax" | "sty" | "stx" | "dey" | "txa" | "ane" | "bcc" | "sha" | "tya" | "txs" | "tas" | "shy" | "shx" | "ldy" | "lda" | "ldx" | "lax" | "tay" | "tax" | "lxa" | "bcs" | "clv" | "tsx" | "las" | "cpy" | "cmp" | "dcp" | "dec" | "iny" | "dex" | "sbx" | "bne" | "cld" | "cpx" | "sbc" | "isc" | "inc" | "inx" | "beq" | "sed";
 // USBC is executed as SBC
 export type AssembleInstruction = CommonInstruction | "usbc";
-// Accumumator RMW instructions are executed differently from memory RMW instructions
+// Accumulator RMW instructions are executed differently from memory RMW instructions
 export type Instruction = CommonInstruction | "asla" | "nopa" | "rola" | "lsra" | "rora";
 export const instructions: Instruction[] = [
     "brk", "ora", "jam", "slo",  "nop", "ora", "asl", "slo",  "php", "ora", "asla","anc",  "nop", "ora", "asl", "slo",
