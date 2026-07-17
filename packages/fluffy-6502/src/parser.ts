@@ -35,7 +35,7 @@ function lex(input: string): Token[] {
 
         const token = match[1]!;
         // simplify whitespace tokens
-        if(/\s|;/.exec(token)) {
+        if(/^\s|;/.exec(token)) {
             if(token.includes("\n")) {
                 ret.push({token, position, kind: "newline"});
             }
