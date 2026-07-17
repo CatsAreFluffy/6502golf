@@ -1,0 +1,13 @@
+.dockerignore
+.git
+.gitignore
+compose.yml
+**/dist/
+eslint.config.mts
+Dockerfile
+**/node_modules/
+packages/6502-golf/.dockerignore
+packages/6502-golf/Dockerfile
+packages/6502-golf/prod.Dockerfile
+packages/6502-golf/prod.yml
+packages/6502-golf/sql/

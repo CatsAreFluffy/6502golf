@@ -1,6 +1,6 @@
 import React from "react";
 
-import Machine from "./machine.ts";
+import { Machine } from "fluffy-6502";
 import MemoryView from "./memory_view.tsx";
 import { RangeContext } from "./range_context.ts";
 

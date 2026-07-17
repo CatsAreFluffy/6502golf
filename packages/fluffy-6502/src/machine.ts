@@ -1,8 +1,8 @@
-import { exec_modes, instructions, jams } from "./instructions.ts";
+import { exec_modes, instructions, jams } from "./instructions.js";
 
 export type AccessType = "instruction" | "pointer" | "data" | "dummy";
 
-export default class Machine {
+export class Machine {
     memory: number[];
 
     pc: number;
@@ -24,48 +24,48 @@ export default class Machine {
     track_accesses: boolean = true;
     last_accesses: [number, AccessType][] = [];
 
-    sources: Map<number, [number, number]>;
+    // sources: Map<number, [number, number]>;
 
-    constructor(memory: number[], sources: Map<number, [number, number]> = new Map()) {
+    constructor(memory: number[]/*, sources: Map<number, [number, number]> = new Map()*/) {
         this.memory = memory;
-        this.pc = (memory[0xfffd] << 8) | memory[0xfffc];
-        this.sources = sources;
+        this.pc = (memory[0xfffd]! << 8) | memory[0xfffc]!;
+        // this.sources = sources;
     }
 
-    serialize_memory(): Record<number, number[]> {
-        const ret: Record<number, number[]> = {};
-        for(let i = 0; i < 65536; i += 256) {
-            let nonempty = false;
-            for(let j = 0; j < 256; j++) {
-                if(this.memory[i + j]) {
-                    nonempty = true;
-                    break;
-                }
-            }
-            if(nonempty) {
-                ret[i] = this.memory.slice(i, i + 256);
-            }
-        }
-        return ret;
-    }
+    // serialize_memory(): Record<number, number[]> {
+    //     const ret: Record<number, number[]> = {};
+    //     for(let i = 0; i < 65536; i += 256) {
+    //         let nonempty = false;
+    //         for(let j = 0; j < 256; j++) {
+    //             if(this.memory[i + j]) {
+    //                 nonempty = true;
+    //                 break;
+    //             }
+    //         }
+    //         if(nonempty) {
+    //             ret[i] = this.memory.slice(i, i + 256);
+    //         }
+    //     }
+    //     return ret;
+    // }
 
-    static deserialize(data: Record<number, number[]>): Machine {
-        const memory = new Array(65536).fill(0);
-        for(const i of Object.keys(data)) {
-            for(let j = 0; j < 256; j++) {
-                const index = ((+i) + j) | 0;
-                if(index < 0 || index >= 65536) {
-                    throw new Error("Memory address out of range");
-                }
-                const value = data[+i][j] | 0;
-                if(value < 0 || value >= 256) {
-                    throw new Error("Memory value out of range");
-                }
-                memory[index] = value;
-            }
-        }
-        return new Machine(memory);
-    }
+    // static deserialize(data: Record<number, number[]>): Machine {
+    //     const memory = new Array(65536).fill(0);
+    //     for(const i of Object.keys(data)) {
+    //         for(let j = 0; j < 256; j++) {
+    //             const index = ((+i) + j) | 0;
+    //             if(index < 0 || index >= 65536) {
+    //                 throw new Error("Memory address out of range");
+    //             }
+    //             const value = data[+i][j] | 0;
+    //             if(value < 0 || value >= 256) {
+    //                 throw new Error("Memory value out of range");
+    //             }
+    //             memory[index] = value;
+    //         }
+    //     }
+    //     return new Machine(memory);
+    // }
 
     clone(): Machine {
         const ret = new Machine(this.memory.slice());
@@ -89,7 +89,7 @@ export default class Machine {
         ret.track_accesses = this.track_accesses;
         ret.last_accesses = this.last_accesses.slice();
 
-        ret.sources = this.sources;
+        // ret.sources = this.sources;
 
         return ret;
     }
@@ -99,7 +99,7 @@ export default class Machine {
         if(this.track_accesses){
             this.last_accesses.push([address, access_type]);
         }
-        return this.memory[address];
+        return this.memory[address]!;
     }
 
     read_instruction(access_type: AccessType = "instruction"): number {
@@ -758,7 +758,7 @@ export default class Machine {
         if(max_cycles !== undefined) {
             cycle_cap = this.cycles + max_cycles;
         }
-        while(!jams[this.memory[this.pc]]) {
+        while(!jams[this.memory[this.pc]!]) {
             this.step();
             if(this.cycles >= cycle_cap) {
                 return;

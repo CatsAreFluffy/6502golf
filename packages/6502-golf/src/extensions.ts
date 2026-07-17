@@ -1,6 +1,6 @@
 import { RangeSet, StateEffect, StateField } from "@codemirror/state";
 import { Decoration, DecorationSet, ViewPlugin, hoverTooltip } from "@codemirror/view";
-import { AccessType } from "./machine";
+import { AccessType } from "fluffy-6502";
 
 const error_decoration = Decoration.mark({class: "error"});
 

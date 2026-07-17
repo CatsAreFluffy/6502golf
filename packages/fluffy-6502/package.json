@@ -1,0 +1,27 @@
+{
+  "name": "fluffy-6502",
+  "version": "0.1.0",
+  "description": "6502 assembler and emulator",
+  "keywords": [
+    "6502"
+  ],
+  "license": "MIT",
+  "author": "CatsAreFluffy",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build",
+    "watch": "tsc --watch"
+  },
+  "files": [
+    "dist"
+  ],
+  "devDependencies": {
+    "typescript": "^6.0.3"
+  },
+  "exports": {
+    ".": "./dist/index.js"
+  }
+}

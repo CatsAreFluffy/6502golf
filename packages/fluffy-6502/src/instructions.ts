@@ -90,9 +90,9 @@ export const instructions: Instruction[] = [
 export const encodings: Map<AssembleInstruction, Map<AssembleAddressingMode, number>> = new Map();
 export const jams: boolean[] = [];
 for(let i = 0; i < 256; i++) {
-    const instruction = instructions[i];
+    const instruction = instructions[i]!;
     const assemble_instruction = instruction.slice(0,3) as AssembleInstruction;
-    const mode = modes[i];
+    const mode = modes[i]!;
     const assemble_mode: AssembleAddressingMode = assemble_modes.get(mode)!;
     let slot = encodings.get(assemble_instruction);
     if(slot === undefined) {

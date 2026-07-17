@@ -1,5 +1,5 @@
 import workerpool from "workerpool";
-import Machine from "./machine.ts";
+import { deserialize_memory } from "./serialize";
 
 export type WorkerOutput = {
     memory: number[],
@@ -8,7 +8,7 @@ export type WorkerOutput = {
 };
 
 function worker(memory: Record<number, number[]>): WorkerOutput {
-    const machine = Machine.deserialize(memory);
+    const machine = deserialize_memory(memory);
     const initial_bytes = machine.nz_bytes();
     machine.track_accesses = false;
     const start_time = performance.now();

@@ -1,5 +1,7 @@
-import { Program, Expr, LocatedError } from "./parser.ts";
-import { AssembleInstruction, AssembleAddressingMode, encodings } from "./instructions.ts";
+import { LocatedError, lex, parse } from "./parser.js";
+import type { Program, Expr } from "./parser.js";
+import { encodings } from "./instructions.js";
+import type { AssembleInstruction, AssembleAddressingMode } from "./instructions.js";
 
 type Relocation = {
     address: number,
@@ -78,7 +80,7 @@ function eval_expr(expr: Expr, labels: Map<string, Expr>, depth: number = 0): nu
     }
 }
 
-export default function assemble(program: Program): {memory: number[], sources: Map<number, [number, number]>} {
+function assemble_program(program: Program): {memory: number[], sources: Map<number, [number, number]>} {
     const ret = new Array(65536).fill(0);
     const sources = new Map();
     const relocations: Relocation[] = [];
@@ -195,7 +197,6 @@ export default function assemble(program: Program): {memory: number[], sources: 
         if(relative) {
             value = (value - instruction_address) & 0xffff;
             if(value < 0xff80 && value >= 128) {
-                console.log(value);
                 const value2 = value >= 0x8000 ? value - 0x10000 : value;
                 throw new LocatedError(`Branch target too far (offset ${value2})`, expr.start, expr.end);
             }
@@ -208,4 +209,10 @@ export default function assemble(program: Program): {memory: number[], sources: 
         }
     }
     return {memory: ret, sources};
+}
+
+export function assemble(input: string): {memory: number[], sources: Map<number, [number, number]>} {
+    const tokens = lex(input);
+    const parse_tree = parse(tokens);
+    return assemble_program(parse_tree);
 }

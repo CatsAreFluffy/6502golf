@@ -1,4 +1,4 @@
-import { ParseAddressingMode } from "./instructions.ts";
+import type { ParseAddressingMode } from "./instructions.ts";
 
 type Token = {
     token: string,
@@ -29,12 +29,11 @@ function lex(input: string): Token[] {
         if(!match) {
             const line_regexp = /.*/y;
             line_regexp.lastIndex = last_index;
-            console.log(line_regexp.lastIndex);
             const line_length = line_regexp.exec(input)![0].length;
-            throw new LocatedError("Lexer error", position, position + line_length);
+            throw new LocatedError("Invalid token", position, position + line_length);
         }
 
-        const token = match[1];
+        const token = match[1]!;
         // simplify whitespace tokens
         if(/\s|;/.exec(token)) {
             if(token.includes("\n")) {
@@ -71,7 +70,7 @@ class TokenStream {
 
     peek(): Token {
         if(!this.eof()) {
-            return this.tokens[this.index];
+            return this.tokens[this.index]!;
         }
         throw new ParseError("Unexpected end of file", this.tokens.at(-1)!);
     }
@@ -161,7 +160,7 @@ function parse_short_expr(stream: TokenStream): Expr {
                             break;
                     }
                 } else {
-                    char = next.token[1];
+                    char = next.token[1]!;
                 }
                 return {type: "constant", value: char.charCodeAt(0), start, end};
             } else if(next.token.match(/^[0-9]/)) {
@@ -434,10 +433,6 @@ function parse_program(stream: TokenStream): Program {
             break;
         }
         const line = parse_line(stream);
-        console.log("prog", line, stream.index);
-        // for(let command of line) {
-        //     ret.push(command);
-        // }
         ret.push(...line);
     }
     return ret;
@@ -447,4 +442,5 @@ function parse(tokens: Token[]): Program {
     return parse_program(new TokenStream(tokens));
 }
 
-export { lex, parse, Expr, Operand, Command, Program };
+export { lex, parse };
+export type { Expr, Operand, Command, Program };

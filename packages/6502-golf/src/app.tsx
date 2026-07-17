@@ -1,17 +1,15 @@
 import React, { ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactCodeMirror, { ReactCodeMirrorRef, ViewUpdate } from "@uiw/react-codemirror";
 
-import { lex, LocatedError, parse } from "./parser.ts";
-import assemble from "./assembler.ts";
-import Machine from "./machine.ts";
+import { assemble, jams, Machine, LocatedError } from "fluffy-6502";
 import MachineView from "./machine_view.tsx";
 import { access_highlight_extension, access_highlight_field, AccessInfo, error_extension, error_field, error_tooltip, ErrorInfo, set_access_highlight_field, set_error_field } from "./extensions.ts";
-import { jams } from "./instructions.ts";
 import challenges from "./challenges.ts";
 import OutputView from "./output_view.tsx";
 import { judge } from "./judge.ts";
 import { SubmitRequest, SubmitResponse } from "./api_types.ts";
 import ByteCount from "./byte_count.tsx";
+import { serialize_memory } from "./serialize.ts";
 
 const default_code = `
  ; Welcome to 6502 Golf!
@@ -136,17 +134,13 @@ illegal_loop
  jam
 `.replace(/^\n|\n$/g,"");
 
-function assemble_source(src: string): [Machine | undefined, ErrorInfo] {
+function assemble_source(src: string): [Machine | undefined, Map<number, [number, number]> | undefined, ErrorInfo] {
     let new_error_state: ErrorInfo = {valid: false};
     console.log("src:", src);
     try {
-        const tokens = lex(src);
-        console.log("lex:", tokens);
-        const parse_tree = parse(tokens);
-        console.log("parse:", parse_tree);
-        const {memory, sources} = assemble(parse_tree);
-        const machine = new Machine(memory, sources);
-        return [machine, new_error_state];
+        const {memory, sources} = assemble(src);
+        const machine = new Machine(memory);
+        return [machine, sources, new_error_state];
     } catch(e) {
         if(e instanceof LocatedError) {
             new_error_state = {
@@ -159,7 +153,7 @@ function assemble_source(src: string): [Machine | undefined, ErrorInfo] {
         }
         console.error(e);
     }
-    return [undefined, new_error_state];
+    return [undefined, undefined, new_error_state];
 }
 
 function App() {
@@ -217,9 +211,16 @@ function App() {
         () => ({valid: false})
     );
 
+    const [sources, setSources] = useState<Map<number, [number, number]>>(
+        () => new Map()
+    );
+
     const [base_machine, setBaseMachine] = useState(
         () => {
-            const [machine, error_state] = assemble_source(code);
+            const [machine, sources, error_state] = assemble_source(code);
+            if(sources){
+                setSources(sources);
+            }
             setErrorInfo(error_state);
             return machine ?? new Machine(new Array(65536).fill(0));
         }
@@ -234,10 +235,11 @@ function App() {
     const handleChange = React.useCallback((val: string, _viewUpdate: ViewUpdate) => {
         localStorage.setItem("6502_golf_code", val);
         setCode(val);
-        const [machine, error_state] = assemble_source(val);
+        const [machine, sources, error_state] = assemble_source(val);
         if(machine) {
             setBaseMachine(machine);
             setMachine(machine);
+            setSources(sources!);
         }
         setErrorInfo(error_state);
         setJudgment("");
@@ -311,7 +313,7 @@ function App() {
 
     const handleSubmit = async () => {
         setSubmitJudgment("...");
-        const memory = base_machine.serialize_memory();
+        const memory = serialize_memory(base_machine);
         const request: SubmitRequest = {username, challenge_name, memory};
         try {
             const response = await fetch("/submit",
@@ -342,7 +344,7 @@ function App() {
         }
         const access_locations: AccessInfo[] = [];
         for(const [address, access_type] of machine.last_access_map()) {
-            const source = machine.sources.get(address);
+            const source = sources.get(address);
             if(source === undefined) {
                 continue;
             }

@@ -1,0 +1,20 @@
+services:
+  app:
+    build: .
+    command: sh -c "npm -w fluffy-6502 run build && npm i && reflex -R 'dist/*' -s -- npm -w 6502-golf run start"
+    ports:
+      - 8000:8000
+    working_dir: /app
+    volumes:
+      - ./:/app
+
+  db:
+    image: postgres:18.1-alpine3.23
+    environment:
+      POSTGRES_DB: 6502golf
+      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_INITDB_ARGS: "--locale-provider=icu --icu-locale=en-US"
+    ports:
+      - 5432:5432
+    volumes:
+      - ./sql:/docker-entrypoint-initdb.d
