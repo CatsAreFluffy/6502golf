@@ -2,7 +2,7 @@ import type { ParseAddressingMode } from "./instructions.ts";
 
 type Token = {
     token: string,
-    kind: "identifier" | "symbol" | "indent" | "newline" | "eof",
+    kind: "identifier" | "symbol" | "string" | "indent" | "newline" | "eof",
     position: number,
 };
 
@@ -21,7 +21,7 @@ function lex(input: string): Token[] {
     let position = 0;
     let start_of_line = true;
     const ret: Token[] = [];
-    const regexp = /([ \t]+|;[^\n]*$|(?:[ \t]*(?:;[^\n]*)?\n)+|[0-9a-zA-Z_.$]+|'(?:[^\n\\']|\\.)'|<<|>>|[()[\]+-/*|^&~,#:<>=])/sy;
+    const regexp = /([ \t]+|;[^\n]*$|(?:[ \t]*(?:;[^\n]*)?\n)+|[0-9a-zA-Z_.$]+|'(?:[^\n\\']|\\.)'|"(?:[^\n\\"]|\\.)*"|<<|>>|[()[\]+-/*|^&~,#:<>=])/sy;
     regexp.lastIndex = 0;
     while(regexp.lastIndex < input.length) {
         const last_index = regexp.lastIndex;
@@ -43,6 +43,8 @@ function lex(input: string): Token[] {
                 // single-line whitespace is only significant at the beginning
                 ret.push({token, position, kind: "indent"});
             }
+        } else if(token[0]=='"') {
+            ret.push({token, position, kind: "string"});
         } else if(/[0-9a-zA-Z_.$']/.exec(token)) {
             ret.push({token, position, kind: "identifier"});
         } else {
@@ -186,6 +188,8 @@ function parse_short_expr(stream: TokenStream): Expr {
             } else {
                 throw new ParseError("Invalid operator", next);
             }
+        case "string":
+            throw new ParseError("Strings cannot be used in expressions", next);
         default:
             throw new ParseError("Expressions cannot be empty", next);
     }
@@ -299,6 +303,20 @@ function parse_label(stream: TokenStream): Label {
     return {name: label.token, start, end: stream.position()};
 }
 
+type StringLiteral = {
+    value: string,
+    start: number,
+    end: number
+};
+function parse_string_expr(stream: TokenStream): StringLiteral {
+    const start = stream.position();
+    const string = stream.next();
+    if(string.kind != "string") {
+        throw new ParseError("Expected string", string);
+    }
+    return {value: string.token.slice(1, -1), start, end: stream.position()};
+}
+
 type Command = ({
     type: "label",
     body: Label,
@@ -312,6 +330,10 @@ type Command = ({
     type: "dc",
     length: number,
     value: Expr,
+} | {
+    type: "dcstring",
+    length: number,
+    value: StringLiteral,
 } | {
     type: "ds",
     length: Expr,
@@ -345,7 +367,11 @@ function parse_command(stream: TokenStream): Command {
                 "dc.w": 2,
                 "word": 2,
             };
-            command = {type: "dc", length: lengths[name], value: parse_expr(stream), start, end: stream.position()};
+            if(stream.peek().kind == "string") {
+                command = {type: "dcstring", length: lengths[name], value: parse_string_expr(stream), start, end: stream.position()};
+            } else {
+                command = {type: "dc", length: lengths[name], value: parse_expr(stream), start, end: stream.position()};
+            }
             break;
         }
         case "ds.b":

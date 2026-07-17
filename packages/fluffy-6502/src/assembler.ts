@@ -118,6 +118,48 @@ function assemble_program(program: Program): {memory: number[], sources: Map<num
                 }
                 org = (org + command.length) & 0xffff;
                 break;
+            case "dcstring": {
+                const {length, value} = command;
+                for(let i = 0; i < value.value.length;) {
+                    const char_len = 1 + +(value.value[i]=="\\");
+                    const char_start = value.start + 1 + i;
+                    const char_end = char_start + char_len;
+                    let char = value.value[i];
+                    if(value.value[i]=="\\") {
+                        switch(value.value[i+1]) {
+                            case "n":
+                                char = "\n";
+                                break;
+                            case "r":
+                                char = "\r";
+                                break;
+                            case "t":
+                                char = "\t";
+                                break;
+                            case "\\":
+                                char = "\\";
+                                break;
+                            default:
+                                char = String.fromCharCode(0);
+                                break;
+                        }
+                    }
+                    const ord = char!.charCodeAt(0);
+                    if(length == 1 && ord > 128) {
+                        throw new LocatedError("Multibyte character in byte string", char_start, char_end);
+                    }
+                    ret[org] = ord & 0xff;
+                    sources.set(org, [char_start, char_end]);
+                    org = (org + 1) & 0xffff;
+                    if(length == 2) {
+                        ret[org] = ord >> 8;
+                        sources.set(org, [char_start, char_end]);
+                        org = (org + 1) & 0xffff;
+                    }
+                    i += char_len;
+                }
+                break;
+            }
             case "ds": {
                 const length = eval_expr(command.length, new Map()) * command.entry_size;
                 org = (org + length) & 0xffff;
