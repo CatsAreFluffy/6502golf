@@ -643,7 +643,7 @@ export class Machine {
                 const pc_high = this.read(0x100 + this.s, "data");
                 this.s = (this.s + 1) & 0xff;
                 this.pc = (pc_high << 8) | pc_low;
-                this.read_instruction();
+                this.read_instruction("dummy");
                 break;
             }
             case "sax":
