@@ -232,7 +232,7 @@ function App() {
 
     const [judgment, setJudgment] = useState(() => "");
 
-    const handleChange = React.useCallback((val: string, _viewUpdate: ViewUpdate) => {
+    const handleChange = useCallback((val: string, _viewUpdate: ViewUpdate) => {
         localStorage.setItem("6502_golf_code", val);
         setCode(val);
         const [machine, sources, error_state] = assemble_source(val);
@@ -286,6 +286,47 @@ function App() {
         }
         setMachine(new_machine);
     };
+
+    const [breakAddress, setBreakAddress] = useState(() => 0);
+
+    const handleRunToAccess = () => {
+        const new_machine = machine.clone();
+        const now = Date.now();
+        for(let i = 0; i < 1000000; i++) {
+            new_machine.step();
+            if(new_machine.last_access_map().has(breakAddress)) {
+                let done = false;
+                for(const [address, kind] of new_machine.last_accesses) {
+                    if(address == breakAddress && kind != "dummy") {
+                        done = true;
+                        break;
+                    }
+                }
+                if(done) {
+                    break;
+                }
+            }
+        }
+        const millis = Date.now() - now;
+        if(new_machine.instructions > machine.instructions) {
+            console.log("One step takes", (millis*1e6/(new_machine.instructions - machine.instructions)).toFixed(2), "ns");
+            console.log("One cycle takes", (millis*1e6/(new_machine.cycles - machine.cycles)).toFixed(2), "ns");
+        }
+        setMachine(new_machine);
+    };
+
+    const handleChangeBreakAddress = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+        let base = 10;
+        let value = e.target.value;
+        if(value.startsWith("$")) {
+            base = 16;
+            value = value.slice(1);
+        }
+        const new_break_address = parseInt(value, base);
+        if(!isNaN(new_break_address)) {
+            setBreakAddress(new_break_address);
+        }
+    }, []);
 
     const expected_output_bytes = useMemo(() => current_challenge.output(), [challenge_name]);
 
@@ -394,6 +435,8 @@ function App() {
             <button onClick={handleStep}>Step</button>
             <button onClick={handleRunToJump}>Run until backwards jump</button>
             <button onClick={handleRunToBrk}>Run until BRK</button>
+            <button onClick={handleRunToAccess}>Run until address accessed:</button>
+            <input onChange={handleChangeBreakAddress}/>
             <button onClick={handleRunToEnd}>Run until end</button>
             <button onClick={handleSubmit}>Submit</button> {submit_judgment}
             <MachineView machine={machine} />
