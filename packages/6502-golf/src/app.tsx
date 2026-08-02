@@ -134,13 +134,13 @@ illegal_loop
  jam
 `.replace(/^\n|\n$/g,"");
 
-function assemble_source(src: string): [Machine | undefined, Map<number, [number, number]> | undefined, ErrorInfo] {
+function assemble_source(src: string): [Machine | undefined, Map<number, [number, number]> | undefined, Map<number, number[]> | undefined, ErrorInfo] {
     let new_error_state: ErrorInfo = {valid: false};
     console.log("src:", src);
     try {
-        const {memory, sources} = assemble(src);
+        const {memory, sources, line_targets} = assemble(src);
         const machine = new Machine(memory);
-        return [machine, sources, new_error_state];
+        return [machine, sources, line_targets, new_error_state];
     } catch(e) {
         if(e instanceof LocatedError) {
             new_error_state = {
@@ -153,7 +153,7 @@ function assemble_source(src: string): [Machine | undefined, Map<number, [number
         }
         console.error(e);
     }
-    return [undefined, undefined, new_error_state];
+    return [undefined, undefined, undefined, new_error_state];
 }
 
 function App() {
@@ -215,11 +215,18 @@ function App() {
         () => new Map()
     );
 
+    const [line_targets, setLineTargets] = useState<Map<number, number[]>>(
+        () => new Map()
+    );
+
     const [base_machine, setBaseMachine] = useState(
         () => {
-            const [machine, sources, error_state] = assemble_source(code);
-            if(sources){
+            const [machine, sources, line_targets, error_state] = assemble_source(code);
+            if(sources) {
                 setSources(sources);
+            }
+            if(line_targets) {
+                setLineTargets(line_targets);
             }
             setErrorInfo(error_state);
             return machine ?? new Machine(new Array(65536).fill(0));
@@ -235,15 +242,25 @@ function App() {
     const handleChange = useCallback((val: string, _viewUpdate: ViewUpdate) => {
         localStorage.setItem("6502_golf_code", val);
         setCode(val);
-        const [machine, sources, error_state] = assemble_source(val);
+        const [machine, sources, line_targets, error_state] = assemble_source(val);
         if(machine) {
             setBaseMachine(machine);
             setMachine(machine);
             setSources(sources!);
+            setLineTargets(line_targets!);
         }
         setErrorInfo(error_state);
         setJudgment("");
     }, []);
+
+    const [cursor_line, setCursorLine] = useState(() => 0);
+
+    const handleUpdate = useCallback((viewUpdate: ViewUpdate) => {
+        const state = viewUpdate.view.state;
+        setCursorLine(state.doc.lineAt(state.selection.main.head).number - 1);
+    }, []);
+
+    const editor_line_targets = line_targets.get(cursor_line) ?? [];
 
     const handleReset = () => {
         setMachine(base_machine);
@@ -430,7 +447,7 @@ function App() {
             <div>Challenges: {challenge_buttons}</div>
             <b>{challenge_name}</b>: {current_challenge.description}<br />
             <ByteCount bytes={bytes} valid={!error_info.valid} />{judgment}
-            <ReactCodeMirror ref={editor_ref} className="editor" value={code} onChange={handleChange} extensions={extensions}/>
+            <ReactCodeMirror ref={editor_ref} className="editor" value={code} onChange={handleChange} onUpdate={handleUpdate} extensions={extensions}/>
             <button onClick={handleReset}>Reset</button>
             <button onClick={handleStep}>Step</button>
             <button onClick={handleRunToJump}>Run until backwards jump</button>
@@ -439,7 +456,7 @@ function App() {
             <input onChange={handleChangeBreakAddress}/>
             <button onClick={handleRunToEnd}>Run until end</button>
             <button onClick={handleSubmit}>Submit</button> {submit_judgment}
-            <MachineView machine={machine} />
+            <MachineView machine={machine} editor_line_targets={editor_line_targets}/>
             Current output:
             <OutputView data={machine.memory.slice(0x8000)} />
             Expected output:
