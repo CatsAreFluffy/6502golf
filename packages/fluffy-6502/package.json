@@ -1,6 +1,6 @@
 {
   "name": "fluffy-6502",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "6502 assembler and emulator",
   "keywords": [
     "6502"

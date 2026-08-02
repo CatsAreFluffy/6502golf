@@ -80,9 +80,17 @@ function eval_expr(expr: Expr, labels: Map<string, Expr>, depth: number = 0): nu
     }
 }
 
-function assemble_program(program: Program): {memory: number[], sources: Map<number, [number, number]>} {
+function assemble_program(program: Program): {memory: number[], sources: Map<number, [number, number]>, line_targets: Map<number, [number]>} {
     const ret = new Array(65536).fill(0);
     const sources = new Map();
+    const line_targets = new Map();
+    function add_target(line: number, target: number) {
+        if(!line_targets.has(line)) {
+            line_targets.set(line, [target]);
+        } else {
+            line_targets.get(line).push(target);
+        }
+    }
     const relocations: Relocation[] = [];
     const labels: Map<string, Expr> = new Map();
     // reset=0x200
@@ -115,6 +123,7 @@ function assemble_program(program: Program): {memory: number[], sources: Map<num
                 });
                 for(let i = 0; i < command.length; i++) {
                     sources.set((org + i) & 0xffff, [command.start, command.end]);
+                    add_target(command.start_line, (org + i) & 0xffff);
                 }
                 org = (org + command.length) & 0xffff;
                 break;
@@ -150,10 +159,12 @@ function assemble_program(program: Program): {memory: number[], sources: Map<num
                     }
                     ret[org] = ord & 0xff;
                     sources.set(org, [char_start, char_end]);
+                    add_target(command.start_line, org);
                     org = (org + 1) & 0xffff;
                     if(length == 2) {
                         ret[org] = ord >> 8;
                         sources.set(org, [char_start, char_end]);
+                        add_target(command.start_line, org);
                         org = (org + 1) & 0xffff;
                     }
                     i += char_len;
@@ -165,6 +176,7 @@ function assemble_program(program: Program): {memory: number[], sources: Map<num
                 org = (org + length) & 0xffff;
                 for(let i = 0; i < length; i++) {
                     sources.set((org + i) & 0xffff, [command.start, command.end]);
+                    add_target(command.start_line, (org + i) & 0xffff);
                 }
                 break;
             }
@@ -208,6 +220,7 @@ function assemble_program(program: Program): {memory: number[], sources: Map<num
                 }
                 ret[org] = opcode;
                 sources.set(org, [command.body.start, command.body.start + command.body.instruction.length]);
+                add_target(command.start_line, org);
                 org = (org + 1) & 0xffff;
                 const operand_length = operand_lengths.get(mode);
                 if(operand_length === undefined) {
@@ -223,11 +236,12 @@ function assemble_program(program: Program): {memory: number[], sources: Map<num
                 org = (org + operand_length) & 0xffff;
                 for(let i = 0; i < operand_length; i++) {
                     sources.set((org - operand_length + i) & 0xffff, [command.body.operand.start, command.end]);
+                    add_target(command.start_line, (org - operand_length + i) & 0xffff);
                 }
                 break;
             }
             case "label":
-                labels.set(command.body.name, {type: "constant", value: org, start: 0, end: 0});
+                labels.set(command.body.name, {type: "constant", value: org, start: 0, end: 0, start_line: 0, end_line: 0});
                 break;
             case "org":
                 org = eval_expr(command.base, new Map());
@@ -250,10 +264,10 @@ function assemble_program(program: Program): {memory: number[], sources: Map<num
             value >>= 8;
         }
     }
-    return {memory: ret, sources};
+    return {memory: ret, sources, line_targets};
 }
 
-export function assemble(input: string): {memory: number[], sources: Map<number, [number, number]>} {
+export function assemble(input: string): {memory: number[], sources: Map<number, [number, number]>, line_targets: Map<number, number[]>} {
     const tokens = lex(input);
     const parse_tree = parse(tokens);
     return assemble_program(parse_tree);
