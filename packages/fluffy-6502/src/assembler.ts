@@ -11,14 +11,14 @@ type Relocation = {
     relative: boolean,
 };
 
-function eval_expr(expr: Expr, labels: Map<string, Expr>, depth: number = 0): number {
+function eval_expr(expr: Expr, labels: Map<string, Expr>, instruction_address: number, depth: number): number {
     if(depth > labels.size) {
         throw new LocatedError("Self-referential expression", expr.start, expr.end);
     }
     switch(expr.type) {
         case "binop": {
-            const left = eval_expr(expr.left, labels, depth);
-            const right = eval_expr(expr.right, labels, depth);
+            const left = eval_expr(expr.left, labels, instruction_address, depth);
+            const right = eval_expr(expr.right, labels, instruction_address, depth);
             switch(expr.operation) {
                 case "+":
                     return (left + right) | 0;
@@ -55,7 +55,7 @@ function eval_expr(expr: Expr, labels: Map<string, Expr>, depth: number = 0): nu
             break;
         }
         case "op": {
-            const body = eval_expr(expr.body, labels, depth);
+            const body = eval_expr(expr.body, labels, instruction_address, depth);
             switch(expr.operation) {
                 case "-":
                     return -body | 0;
@@ -69,11 +69,14 @@ function eval_expr(expr: Expr, labels: Map<string, Expr>, depth: number = 0): nu
             break;
         }
         case "label": {
+            if(expr.label == ".") {
+                return instruction_address;
+            }
             const subexpr = labels.get(expr.label);
             if(subexpr === undefined) {
                 throw new LocatedError(`Unknown label ${expr.label}`, expr.start, expr.end);
             }
-            return eval_expr(subexpr, labels, depth + 1);
+            return eval_expr(subexpr, labels, instruction_address, depth + 1);
         }
         case "constant":
             return expr.value;
@@ -172,7 +175,7 @@ function assemble_program(program: Program): {memory: number[], sources: Map<num
                 break;
             }
             case "ds": {
-                const length = eval_expr(command.length, new Map()) * command.entry_size;
+                const length = eval_expr(command.length, new Map(), org, 0) * command.entry_size;
                 org = (org + length) & 0xffff;
                 for(let i = 0; i < length; i++) {
                     sources.set((org + i) & 0xffff, [command.start, command.end]);
@@ -244,12 +247,12 @@ function assemble_program(program: Program): {memory: number[], sources: Map<num
                 labels.set(command.body.name, {type: "constant", value: org, start: 0, end: 0, start_line: 0, end_line: 0});
                 break;
             case "org":
-                org = eval_expr(command.base, new Map());
+                org = eval_expr(command.base, new Map(), org, 0);
                 break;
         }
     }
     for(const {address, instruction_address, length, expr, relative} of relocations) {
-        let value = eval_expr(expr, labels);
+        let value = eval_expr(expr, labels, org, 0);
         if(relative) {
             value = (value - instruction_address) & 0xffff;
             if(value < 0xff80 && value >= 128) {
