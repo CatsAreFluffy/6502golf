@@ -84,7 +84,7 @@ export const instructions: Instruction[] = [
     "cpy", "cmp", "nop", "dcp",  "cpy", "cmp", "dec", "dcp",  "iny", "cmp", "dex", "sbx",  "cpy", "cmp", "dec", "dcp",
     "bne", "cmp", "jam", "dcp",  "nop", "cmp", "dec", "dcp",  "cld", "cmp", "nopa","dcp",  "nop", "cmp", "dec", "dcp",
     "cpx", "sbc", "nop", "isc",  "cpx", "sbc", "inc", "isc",  "inx", "sbc", "nopa","sbc",  "cpx", "sbc", "inc", "isc",
-    "beq", "sbc", "jam", "inc",  "nop", "sbc", "inc", "isc",  "sed", "sbc", "nopa","isc",  "nop", "sbc", "inc", "isc",
+    "beq", "sbc", "jam", "isc",  "nop", "sbc", "inc", "isc",  "sed", "sbc", "nopa","isc",  "nop", "sbc", "inc", "isc",
 ];
 
 export const encodings: Map<AssembleInstruction, Map<AssembleAddressingMode, number>> = new Map();
