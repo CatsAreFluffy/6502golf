@@ -13,5 +13,9 @@
     "globals": "^16.5.0",
     "jiti": "^2.6.1",
     "typescript-eslint": "^8.49.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CatsAreFluffy/6502golf"
   }
 }

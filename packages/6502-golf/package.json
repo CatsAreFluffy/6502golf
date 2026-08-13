@@ -31,5 +31,10 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "workerpool": "^10.0.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CatsAreFluffy/6502golf",
+    "directory": "packages/6502-golf"
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "fluffy-6502",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "6502 assembler and emulator",
   "keywords": [
     "6502"
@@ -23,5 +23,10 @@
   },
   "exports": {
     ".": "./dist/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CatsAreFluffy/6502golf",
+    "directory": "packages/fluffy-6502"
   }
 }
