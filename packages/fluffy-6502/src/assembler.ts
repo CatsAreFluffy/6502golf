@@ -87,11 +87,15 @@ function assemble_program(program: Program): {memory: number[], sources: Map<num
     const ret = new Array(65536).fill(0);
     const sources = new Map();
     const line_targets = new Map();
-    function add_target(line: number, target: number) {
-        if(!line_targets.has(line)) {
-            line_targets.set(line, [target]);
+    function write_byte(address: number, value: number | undefined, command_start: number, command_end: number, command_line: number) {
+        if(value !== undefined) {
+            ret[address] = value;
+        }
+        sources.set(address, [command_start, command_end]);
+        if(!line_targets.has(command_line)) {
+            line_targets.set(command_line, [address]);
         } else {
-            line_targets.get(line).push(target);
+            line_targets.get(command_line).push(address);
         }
     }
     const relocations: Relocation[] = [];
@@ -125,8 +129,7 @@ function assemble_program(program: Program): {memory: number[], sources: Map<num
                     relative: false,
                 });
                 for(let i = 0; i < command.length; i++) {
-                    sources.set((org + i) & 0xffff, [command.start, command.end]);
-                    add_target(command.start_line, (org + i) & 0xffff);
+                    write_byte((org + i) & 0xffff, undefined, command.start, command.end, command.start_line);
                 }
                 org = (org + command.length) & 0xffff;
                 break;
@@ -160,14 +163,10 @@ function assemble_program(program: Program): {memory: number[], sources: Map<num
                     if(length == 1 && ord > 128) {
                         throw new LocatedError("Multibyte character in byte string", char_start, char_end);
                     }
-                    ret[org] = ord & 0xff;
-                    sources.set(org, [char_start, char_end]);
-                    add_target(command.start_line, org);
+                    write_byte(org, ord & 0xff, char_start, char_end, command.start_line);
                     org = (org + 1) & 0xffff;
                     if(length == 2) {
-                        ret[org] = ord >> 8;
-                        sources.set(org, [char_start, char_end]);
-                        add_target(command.start_line, org);
+                        write_byte(org, ord >> 8, char_start, char_end, command.start_line);
                         org = (org + 1) & 0xffff;
                     }
                     i += char_len;
@@ -178,8 +177,7 @@ function assemble_program(program: Program): {memory: number[], sources: Map<num
                 const length = eval_expr(command.length, new Map(), org, 0) * command.entry_size;
                 org = (org + length) & 0xffff;
                 for(let i = 0; i < length; i++) {
-                    sources.set((org + i) & 0xffff, [command.start, command.end]);
-                    add_target(command.start_line, (org + i) & 0xffff);
+                    write_byte((org + i) & 0xffff, undefined, command.start, command.end, command.start_line);
                 }
                 break;
             }
@@ -221,9 +219,7 @@ function assemble_program(program: Program): {memory: number[], sources: Map<num
                 if(opcode === undefined) {
                     throw new LocatedError(`Illegal addressing mode ${mode} for ${instruction}`, start, end);
                 }
-                ret[org] = opcode;
-                sources.set(org, [command.body.start, command.body.start + command.body.instruction.length]);
-                add_target(command.start_line, org);
+                write_byte(org, opcode, command.start, command.end, command.start_line);
                 org = (org + 1) & 0xffff;
                 const operand_length = operand_lengths.get(mode);
                 if(operand_length === undefined) {
@@ -236,11 +232,10 @@ function assemble_program(program: Program): {memory: number[], sources: Map<num
                     expr: operand.body,
                     relative: mode == "relative",
                 });
-                org = (org + operand_length) & 0xffff;
                 for(let i = 0; i < operand_length; i++) {
-                    sources.set((org - operand_length + i) & 0xffff, [command.body.operand.start, command.end]);
-                    add_target(command.start_line, (org - operand_length + i) & 0xffff);
+                    write_byte((org + i) & 0xffff, undefined, command.start, command.end, command.start_line);
                 }
+                org = (org + operand_length) & 0xffff;
                 break;
             }
             case "label":
