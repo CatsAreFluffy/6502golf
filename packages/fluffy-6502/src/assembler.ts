@@ -219,7 +219,7 @@ function assemble_program(program: Program): {memory: number[], sources: Map<num
                 if(opcode === undefined) {
                     throw new LocatedError(`Illegal addressing mode ${mode} for ${instruction}`, start, end);
                 }
-                write_byte(org, opcode, command.start, command.end, command.start_line);
+                write_byte(org, opcode, command.start, command.start + command.body.instruction.length, command.start_line);
                 org = (org + 1) & 0xffff;
                 const operand_length = operand_lengths.get(mode);
                 if(operand_length === undefined) {
@@ -233,7 +233,7 @@ function assemble_program(program: Program): {memory: number[], sources: Map<num
                     relative: mode == "relative",
                 });
                 for(let i = 0; i < operand_length; i++) {
-                    write_byte((org + i) & 0xffff, undefined, command.start, command.end, command.start_line);
+                    write_byte((org + i) & 0xffff, undefined, command.body.operand.start, command.end, command.start_line);
                 }
                 org = (org + operand_length) & 0xffff;
                 break;
