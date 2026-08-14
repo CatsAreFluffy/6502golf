@@ -418,6 +418,7 @@ export class Machine {
                 break;
             }
             case "brk": {
+                this.read(effective_address, "dummy");
                 this.write(0x100 + this.s, this.pc >> 8, "data");
                 this.s = (this.s - 1) & 0xff;
                 this.write(0x100 + this.s, this.pc & 0xff, "data");

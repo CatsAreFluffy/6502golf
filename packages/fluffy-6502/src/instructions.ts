@@ -39,6 +39,8 @@ export const modes: AddressingMode[] = [
     rel, iyf, imp, iyf,  zpx, zpx, zpx, zpx,  imp, ayf, imp, ayf,  axf, axf, abx, abx,
 ];
 export const exec_modes = modes.slice();
+// BRK adjusts PC like a two-byte instruction
+exec_modes[0x00] = imm;
 // JSR reads its operand weirdly so don't do it as part of the addressing mode
 exec_modes[0x20] = imm;
 
