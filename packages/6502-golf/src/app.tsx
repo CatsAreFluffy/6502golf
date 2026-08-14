@@ -134,13 +134,20 @@ illegal_loop
  jam
 `.replace(/^\n|\n$/g,"");
 
-function assemble_source(src: string): [Machine | undefined, Map<number, [number, number]> | undefined, Map<number, number[]> | undefined, ErrorInfo] {
+type AssembleOutput = {
+    machine: Machine | undefined,
+    sources: Map<number, [number, number]> | undefined,
+    line_targets: Map<number, number[]> | undefined,
+    error_state: ErrorInfo
+};
+
+function assemble_source(src: string): AssembleOutput {
     let new_error_state: ErrorInfo = {valid: false};
     console.log("src:", src);
     try {
         const {memory, sources, line_targets} = assemble(src);
         const machine = new Machine(memory);
-        return [machine, sources, line_targets, new_error_state];
+        return {machine, sources, line_targets, error_state: new_error_state};
     } catch(e) {
         if(e instanceof LocatedError) {
             new_error_state = {
@@ -153,7 +160,7 @@ function assemble_source(src: string): [Machine | undefined, Map<number, [number
         }
         console.error(e);
     }
-    return [undefined, undefined, undefined, new_error_state];
+    return {machine: undefined, sources: undefined, line_targets: undefined, error_state: new_error_state};
 }
 
 function App() {
@@ -221,7 +228,7 @@ function App() {
 
     const [base_machine, setBaseMachine] = useState(
         () => {
-            const [machine, sources, line_targets, error_state] = assemble_source(code);
+            const {machine, sources, line_targets, error_state} = assemble_source(code);
             if(sources) {
                 setSources(sources);
             }
@@ -242,7 +249,7 @@ function App() {
     const handleChange = useCallback((val: string, _viewUpdate: ViewUpdate) => {
         localStorage.setItem("6502_golf_code", val);
         setCode(val);
-        const [machine, sources, line_targets, error_state] = assemble_source(val);
+        const {machine, sources, line_targets, error_state} = assemble_source(val);
         if(machine) {
             setBaseMachine(machine);
             setMachine(machine);
