@@ -175,10 +175,10 @@ function assemble_program(program: Program): {memory: number[], sources: Map<num
             }
             case "ds": {
                 const length = eval_expr(command.length, new Map(), org, 0) * command.entry_size;
-                org = (org + length) & 0xffff;
                 for(let i = 0; i < length; i++) {
                     write_byte((org + i) & 0xffff, undefined, command.start, command.end, command.start_line);
                 }
+                org = (org + length) & 0xffff;
                 break;
             }
             case "equ": {
