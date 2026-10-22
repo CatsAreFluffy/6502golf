@@ -26,7 +26,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/CatsAreFluffy/6502golf",
+    "url": "git+https://github.com/CatsAreFluffy/6502golf.git",
     "directory": "packages/fluffy-6502"
   }
 }
